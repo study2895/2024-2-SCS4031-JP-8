@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>경기도 버스 노선 조회 테스트</title>
+    <script>
+      // 여기에 getBusRouteList 함수 복사
+      function getBusRouteList(keyword) {
+        var xhr = new XMLHttpRequest()
+        var url =
+          'http://apis.data.go.kr/6410000/busrouteservice/getBusRouteList' // API 엔드포인트
+        var serviceKey =
+          'EVTsGjdsoUlBtJTpdh%2FitgFJXzeeNK%2FBP4lN8my%2Bi9AaoLGNln1kqRcyVP7CVRY8GsiXkX%2BOMl2HviEvq6hlfQ%3D%3D' // 인코딩된 인증키
+
+        var queryParams =
+          '?' + encodeURIComponent('serviceKey') + '=' + serviceKey
+        queryParams +=
+          '&' +
+          encodeURIComponent('keyword') +
+          '=' +
+          encodeURIComponent(keyword)
+
+        xhr.open('GET', url + queryParams)
+
+        xhr.onreadystatechange = function () {
+          if (this.readyState === 4) {
+            if (this.status === 200) {
+              console.log('Response: ', this.responseText) // 성공 응답 출력
+            } else {
+              console.error('Error: ', this.status) // 오류 처리
+            }
+          }
+        }
+
+        xhr.send('')
+      }
+    </script>
+  </head>
+  <body>
+    <h1>경기도 버스 노선 조회 테스트</h1>
+    <button onclick="getBusRouteList('11')">11번 버스 노선 조회</button>
+  </body>
+</html>

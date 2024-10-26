@@ -1,0 +1,11 @@
+name: apitest-2
+services:
+  - name: web
+    type: web
+    build:
+      context: .
+      builder: https://github.com/heroku/heroku-buildpack-nodejs.git
+    run:
+      command: npm start
+    ports:
+      - 8000:8000
