@@ -77,7 +77,7 @@ export default {
           )}`,
           {
             headers: {
-              Authorization: `KakaoAK 2372890c7cae057635e6427bc7d7918f`
+              Authorization: `KakaoAK ${process.env.VUE_APP_KAKAO_REST_KEY}`
             }
           }
         )
