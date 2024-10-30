@@ -49,12 +49,12 @@ const routes = [
     path: '/route',
     name: 'RouteSearchResultView',
     component: RouteSearchResultView
-  }
-  // {
-  //   path: '/odisay',
-  //   name: 'odisayAPITestView',
-  //   component: OdisayAPITestView
-  // }
+  },
+  {
+    path: '/odisay',
+    name: 'odisayAPITestView',
+    component: OdisayAPITestView
+  },
   // {
   //   path: '/',
   //   name: 'BusInfoPage',
@@ -84,11 +84,11 @@ const routes = [
   //   name: 'GeologicalAPITest',
   //   component: GeologicalAPITest
   // },
-  // {
-  //   path: '/odi',
-  //   name: 'odi',
-  //   component: odi
-  // },
+  {
+    path: '/odi',
+    name: 'odi',
+    component: odi
+  }
 
   // {
   //   path: '/kakao',
