@@ -124,9 +124,21 @@ export default {
           })
         })
 
-        filteredRoutes.value = allRoutes
-        providedRouteExists.value = allRoutes.length > 0
-        console.log('조건에 맞는 모든 노선:', filteredRoutes.value)
+        // 중복 제거 - 동일한 버스 번호가 여러 개 있을 경우 하나씩만 추가
+        const uniqueRoutes = allRoutes.reduce((acc, current) => {
+          const duplicate = acc.find((route) => route.busNo === current.busNo)
+          if (!duplicate) {
+            acc.push(current)
+          }
+          return acc
+        }, [])
+
+        filteredRoutes.value = uniqueRoutes
+        providedRouteExists.value = uniqueRoutes.length > 0
+        console.log(
+          '조건에 맞는 모든 노선 (중복 제거 후):',
+          filteredRoutes.value
+        )
       } catch (error) {
         console.error('API 호출 중 오류 발생:', error)
       } finally {
