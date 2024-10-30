@@ -36,7 +36,6 @@ import { mapState, mapMutations } from 'vuex'
 export default {
   data() {
     return {
-      // Vuex의 값을 복사하여 로컬 상태로 저장
       localMonth: '',
       localDay: '',
       localHour: '',
@@ -44,7 +43,6 @@ export default {
     }
   },
   computed: {
-    // Vuex에서 출발지와 도착지의 이름과 좌표 가져오기
     ...mapState('departure', {
       departureName: (state) => state.departure?.name || '',
       departureCoordinates: (state) => state.departure?.coordinates || {}
@@ -53,7 +51,6 @@ export default {
       destinationName: (state) => state.destination?.name || '',
       destinationCoordinates: (state) => state.destination?.coordinates || {}
     }),
-    // Vuex의 시간 모듈에서 시간 값 가져오기 (변경 감지 없이 읽기 전용)
     ...mapState('time', {
       month: (state) => state.month,
       day: (state) => state.day,
@@ -62,7 +59,6 @@ export default {
     })
   },
   watch: {
-    // Vuex 상태가 변하면 local data와 동기화
     month: 'syncLocalTime',
     day: 'syncLocalTime',
     hour: 'syncLocalTime',
@@ -77,23 +73,35 @@ export default {
       this.$router.push('/search-destination')
     },
     updateTime() {
-      // 로컬 상태를 Vuex에 업데이트
+      console.log(
+        '로컬 시간 업데이트:',
+        this.localMonth,
+        this.localDay,
+        this.localHour,
+        this.localMinute
+      )
       this.setTime({
         month: this.localMonth,
         day: this.localDay,
         hour: this.localHour,
         minute: this.localMinute
       })
+      console.log('Vuex에 업데이트된 시간:', this.$store.state.time)
     },
     syncLocalTime() {
-      // Vuex의 현재 시간 값을 로컬 상태에 동기화
       this.localMonth = this.month
       this.localDay = this.day
       this.localHour = this.hour
       this.localMinute = this.minute
+      console.log(
+        'Vuex 시간 데이터와 동기화된 로컬 상태:',
+        this.localMonth,
+        this.localDay,
+        this.localHour,
+        this.localMinute
+      )
     },
     searchRoutes() {
-      // 출발지와 도착지의 좌표 설정 여부 확인
       const { x: startX, y: startY } = this.departureCoordinates
       const { x: endX, y: endY } = this.destinationCoordinates
 
@@ -103,14 +111,10 @@ export default {
         return
       }
 
-      console.log('출발지와 도착지의 좌표:', {
-        startX,
-        startY,
-        endX,
-        endY
-      })
+      console.log('출발지와 도착지 좌표:', { startX, startY, endX, endY })
+      console.log('전달할 출발 날짜:', this.localMonth, this.localDay)
+      console.log('전달할 출발 시간:', this.localHour, this.localMinute)
 
-      // 다음 페이지로 좌표 및 시간 정보 전달
       this.$router.push({
         path: '/bus-search',
         query: {
@@ -127,7 +131,6 @@ export default {
     }
   },
   mounted() {
-    // 컴포넌트가 로드될 때 Vuex의 시간 데이터를 로컬 상태로 설정
     this.syncLocalTime()
   }
 }
