@@ -26,7 +26,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useStore } from 'vuex'
 import axios from 'axios'
 import apiConfig from '@/utils/API/apiConfig'
@@ -43,26 +43,29 @@ export default {
     const providedRouteExists = ref(false)
     const filteredRoutes = ref([])
 
-    const time = {
-      hour: store.state.time.hour,
-      minute: store.state.time.minute
-    }
-
     const directionText = (direction) => (direction === 'up' ? '상행' : '하행')
 
+    // 버스 번호별 시간 조건을 확인
     const checkTimeRange = (busNo) => {
-      const currentTime = time.hour * 60 + time.minute
-      if (busNo === '5000A') {
-        return currentTime >= 300 && currentTime < 900 // 오전 5시~오후 3시
+      const hour = parseInt(store.state.time.hour, 10)
+      const minute = parseInt(store.state.time.minute, 10)
+      const currentTime = hour * 60 + minute
+
+      if (busNo === '5000') {
+        return true // 5000번은 모든 시간대 표시
+      } else if (busNo === '5000A') {
+        return currentTime >= 300 && currentTime < 900 // 5:00 - 15:00
       } else if (busNo === '5000B') {
-        return (currentTime >= 725 && currentTime < 1440) || currentTime < 180 // 오후 12시 05분~자정 및 자정~새벽 3시
+        return (
+          (currentTime >= 725 && currentTime < 1440) ||
+          (currentTime >= 0 && currentTime < 180)
+        ) // 12:05 - 23:59, 0:00 - 3:00
       }
-      return true
+      return false
     }
 
     const searchTransitRoutes = async () => {
       loading.value = true
-      console.log('API 호출 시작: 출발지와 도착지 좌표 확인')
       try {
         const startX = store.state.departure.departure.coordinates?.x
         const startY = store.state.departure.departure.coordinates?.y
@@ -70,13 +73,11 @@ export default {
         const endY = store.state.destination.destination.coordinates?.y
 
         if (!startX || !startY || !endX || !endY) {
-          console.error('출발지와 도착지의 x, y 좌표가 설정되지 않았습니다.')
           alert('출발지와 도착지의 위치를 먼저 설정해주세요.')
           return
         }
 
-        console.log('Odyssey API 호출 중:', { startX, startY, endX, endY })
-
+        console.log('API 호출 시작:', { startX, startY, endX, endY })
         const response = await axios.get(
           'https://api.odsay.com/v1/api/searchPubTransPathT',
           {
@@ -92,28 +93,36 @@ export default {
 
         const paths = response.data.result.path || []
         const routeOptions = ['5000', '5000A', '5000B']
-        console.log('경로 결과를 가져왔습니다:', paths)
+        const allRoutes = []
 
-        const allRoutes = paths.flatMap((route) =>
-          route.subPath
-            .filter(
-              (segment) =>
-                segment.trafficType === 2 &&
-                routeOptions.includes(segment.lane[0].busNo) &&
-                checkTimeRange(segment.lane[0].busNo)
-            )
-            .map((segment) => {
-              console.log(
-                `조건을 만족하는 경로 발견: 버스 번호 - ${segment.lane[0].busNo}`
-              )
-              return {
-                busNo: segment.lane[0].busNo,
-                directionText: directionText(segment.direction),
-                stationID: segment.startID,
-                stationName: segment.startName
-              }
-            })
-        )
+        // 전체 노선을 순회하여 버스 번호를 확인하고 시간대 조건을 체크
+        paths.forEach((route) => {
+          route.subPath.forEach((segment) => {
+            if (segment.trafficType === 2) {
+              segment.lane.forEach((lane) => {
+                const busNo = lane.busNo
+                if (routeOptions.includes(busNo)) {
+                  console.log(
+                    `버스 번호 ${busNo}가 발견됨. 시간 조건 확인 중...`
+                  )
+
+                  // 시간 조건에 맞는 경우만 추가
+                  if (checkTimeRange(busNo)) {
+                    console.log(
+                      `조건에 맞는 버스 번호 - ${busNo}, 상행/하행 확인 중`
+                    )
+                    allRoutes.push({
+                      busNo: busNo,
+                      directionText: directionText(segment.direction),
+                      stationID: segment.startID,
+                      stationName: segment.startName
+                    })
+                  }
+                }
+              })
+            }
+          })
+        })
 
         filteredRoutes.value = allRoutes
         providedRouteExists.value = allRoutes.length > 0
@@ -122,33 +131,15 @@ export default {
         console.error('API 호출 중 오류 발생:', error)
       } finally {
         loading.value = false
-        console.log('API 호출 완료')
       }
     }
 
     const selectBusRoute = (route) => {
-      console.log('다음 페이지로 전달되는 정보:', {
-        busNo: route.busNo,
-        direction: route.direction,
-        stationID: route.stationID,
-        stationName: route.stationName,
-        fromLocation,
-        toLocation,
-        startX: store.state.departure.departure.coordinates?.x,
-        startY: store.state.departure.departure.coordinates?.y,
-        endX: store.state.destination.destination.coordinates?.x,
-        endY: store.state.destination.destination.coordinates?.y,
-        month: store.state.time.month,
-        day: store.state.time.day,
-        hour: store.state.time.hour,
-        minute: store.state.time.minute
-      })
-
       router.push({
         path: '/next-page',
         query: {
           busNo: route.busNo,
-          direction: route.direction,
+          direction: route.directionText,
           stationID: route.stationID,
           stationName: route.stationName,
           fromLocation,
