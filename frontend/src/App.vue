@@ -40,4 +40,10 @@ nav a {
 nav a.router-link-exact-active {
   color: #42b983;
 } */
+body {
+  background-color: #eaeaea; /* 425px 바깥 여백 부분 회색 */
+  display: flex;
+  justify-content: center;
+  margin: 0; /* 여백 제거 */
+}
 </style>
