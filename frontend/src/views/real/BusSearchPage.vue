@@ -209,7 +209,6 @@ export default {
   height: 100vh;
   overflow-y: auto;
   border-radius: 10px; /* 모서리 둥글게 */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 약간의 그림자 효과 */
 }
 
 .header {
