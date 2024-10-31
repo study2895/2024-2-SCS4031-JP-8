@@ -1,10 +1,10 @@
 <template>
   <div class="result-page">
-    <div class="header">
+    <!-- <div class="header">
       <h2>대중교통 경로 검색 결과</h2>
       <input type="text" v-model="fromLocation" placeholder="출발지" />
       <input type="text" v-model="toLocation" placeholder="도착지" />
-    </div>
+    </div> -->
 
     <div class="filter-buttons">
       <button @click="filterByType('bus')">버스</button>
@@ -187,18 +187,54 @@ onMounted(() => {
 <style scoped>
 .result-page {
   padding: 20px;
+  max-width: 425px; /* 425px 이하에서는 화면 너비를 채움 */
+  margin: 0 auto;
+  background-color: #ffffff; /* 중앙 모바일 영역 흰색 */
+}
+
+body {
+  background-color: #eaeaea; /* 425px 바깥 여백 부분 회색 */
+  display: flex;
+  justify-content: center;
 }
 
 .header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
   padding-bottom: 20px;
+}
+
+.header h2 {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.header input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
 }
 
 .filter-buttons {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   padding: 10px 0;
+  gap: 5px;
+}
+
+.filter-buttons button {
+  flex: 1;
+  padding: 10px;
+  font-size: 14px;
+  background-color: #e0e0e0;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }
 
 .sort-dropdown {
@@ -206,9 +242,24 @@ onMounted(() => {
   text-align: center;
 }
 
+.sort-dropdown label {
+  font-size: 14px;
+  color: #333;
+}
+
+.sort-dropdown select {
+  margin-left: 10px;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+}
+
 .loading-spinner {
   text-align: center;
   padding: 20px;
+  font-size: 16px;
+  color: #888;
 }
 
 .route-list {
@@ -219,14 +270,26 @@ onMounted(() => {
 
 .route-item {
   border: 1px solid #ddd;
-  padding: 20px;
+  padding: 15px;
   border-radius: 10px;
+  background-color: #f9f9f9;
 }
 
 .route-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.route-header h3 {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+.route-header p {
+  font-size: 14px;
+  color: #555;
 }
 
 .segment-info {
@@ -234,5 +297,14 @@ onMounted(() => {
   padding: 10px;
   background-color: #f5f5f5;
   border-radius: 5px;
+  font-size: 14px;
+}
+
+.arrival-info {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #555;
+  font-weight: bold;
+  text-align: center;
 }
 </style>

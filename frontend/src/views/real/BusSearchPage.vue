@@ -51,6 +51,8 @@ export default {
       const minute = parseInt(store.state.time.minute, 10)
       const currentTime = hour * 60 + minute
 
+      console.log(`현재 시간: ${hour}시 ${minute}분 (분 단위: ${currentTime})`)
+
       if (busNo === '5000') {
         return true // 5000번은 모든 시간대 표시
       } else if (busNo === '5000A') {
@@ -186,23 +188,30 @@ export default {
 
 <style scoped>
 .background {
-  background-color: #eaeaea;
+  background-color: #eaeaea; /* 회색 배경 */
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   z-index: -1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
+
 .mobile-container {
   width: 100%;
-  max-width: 425px;
+  max-width: 425px; /* 모바일 화면 너비 */
   margin: 0 auto;
   padding: 25px;
-  background-color: white;
+  background-color: white; /* 중앙 흰색 배경 */
   height: 100vh;
   overflow-y: auto;
+  border-radius: 10px; /* 모서리 둥글게 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 약간의 그림자 효과 */
 }
+
 .header {
   text-align: center;
   margin-bottom: 15px;
