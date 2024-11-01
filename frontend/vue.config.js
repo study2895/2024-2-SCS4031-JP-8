@@ -38,6 +38,7 @@ module.exports = defineConfig({
         pathRewrite: { '^/v1/search': '/v1/search' }, // 실제 경로와 일치하도록 설정
         secure: false // HTTPS 인증서 관련 문제 무시
       }
-    }
+    },
+    port: 3002
   }
 })
