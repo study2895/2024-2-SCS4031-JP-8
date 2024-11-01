@@ -53,7 +53,7 @@ export default {
 
       console.log(`현재 시간: ${hour}시 ${minute}분 (분 단위: ${currentTime})`)
 
-      if (busNo === '5000') {
+      if (busNo === '5000' || busNo === '1112') {
         return true // 5000번은 모든 시간대 표시
       } else if (busNo === '5000A') {
         return currentTime >= 300 && currentTime < 900 // 5:00 - 15:00
@@ -94,7 +94,7 @@ export default {
         )
 
         const paths = response.data.result.path || []
-        const routeOptions = ['5000', '5000A', '5000B']
+        const routeOptions = ['5000', '5000A', '5000B', '1112']
         const allRoutes = []
 
         // 전체 노선을 순회하여 버스 번호를 확인하고 시간대 조건을 체크
