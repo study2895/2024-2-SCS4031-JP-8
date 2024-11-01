@@ -1,4 +1,5 @@
 const state = {
+  initialize: false, // 초기화 플래그 추가
   month: '',
   day: '',
   hour: '',
@@ -11,12 +12,28 @@ const mutations = {
     state.day = day
     state.hour = hour
     state.minute = minute
+  },
+  resetTime(state) {
+    // 초기화 mutation 추가
+    state.month = ''
+    state.day = ''
+    state.hour = ''
+    state.minute = ''
+  },
+  setInitialize(state, initialize) {
+    state.initialize = initialize
   }
 }
 
 const actions = {
   updateTime({ commit }, time) {
     commit('setTime', time)
+  },
+  initialize({ commit, state }) {
+    if (!state.initialize) {
+      commit('setInitialize', true)
+      commit('resetTime')
+    }
   }
 }
 
