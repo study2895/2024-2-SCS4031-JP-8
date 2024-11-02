@@ -88,8 +88,13 @@
               </div>
             </div>
 
-            <button @click="updateTime" class="modal-button">설정</button>
-            <button @click="showTimeModal = false" class="modal-button">
+            <button @click="updateTime" class="modal-button primary">
+              설정
+            </button>
+            <button
+              @click="showTimeModal = false"
+              class="modal-button secondary"
+            >
               닫기
             </button>
           </div>
@@ -238,10 +243,6 @@ const goToSearchDestination = () => {
   font-size: 14px;
 }
 
-#date-picker {
-  width: 30%;
-}
-
 .modal {
   position: fixed;
   top: 0;
@@ -337,6 +338,12 @@ const goToSearchDestination = () => {
   border: 1px solid #eee;
   border-radius: 10px;
   padding: 5px;
+  scrollbar-width: none; /* For Firefox */
+  -ms-overflow-style: none; /* For Internet Explorer and Edge */
+}
+
+.scrollable::-webkit-scrollbar {
+  display: none; /* For Chrome, Safari, and Opera */
 }
 
 .time-option {
@@ -361,7 +368,7 @@ button {
   padding: 8px 16px;
   border: none;
   border-radius: 5px;
-  background-color: #333;
+  background-color: #3182f6;
   color: white;
   font-weight: bold;
   cursor: pointer;
@@ -370,7 +377,7 @@ button {
 }
 
 button:hover {
-  background-color: #555;
+  background-color: #1c64f2;
 }
 
 button:active {
@@ -378,7 +385,7 @@ button:active {
 }
 
 button.selected {
-  background-color: #000;
+  background-color: #1c64f2;
 }
 
 .modal-button {
@@ -386,21 +393,36 @@ button.selected {
   width: 100%;
 }
 
-::-webkit-scrollbar {
-  width: 4px;
+.meridiem-picker button {
+  background-color: #f3f4f6;
+  color: #4b5563;
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
+.meridiem-picker button:hover {
+  background-color: #e5e7eb;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 2px;
+.meridiem-picker button.selected {
+  background-color: #3182f6;
+  color: white;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
+.modal-button.primary {
+  background-color: #3182f6;
+  color: white;
+}
+
+.modal-button.primary:hover {
+  background-color: #1c64f2;
+}
+
+.modal-button.secondary {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.modal-button.secondary:hover {
+  background-color: #e5e7eb;
 }
 
 .modal-fade-enter-active,
@@ -437,5 +459,9 @@ button.selected {
   button {
     padding: 6px 12px;
   }
+}
+
+#date-picker {
+  width: 30%;
 }
 </style>
