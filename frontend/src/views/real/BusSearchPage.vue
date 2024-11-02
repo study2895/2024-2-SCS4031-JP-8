@@ -1,32 +1,28 @@
 <template>
-  <div class="background">
-    <div class="mobile-container">
-      <header class="header">
-        <h2>대중교통 경로 검색 결과</h2>
-        <p>출발지: {{ fromLocation }}</p>
-        <p>도착지: {{ toLocation }}</p>
-      </header>
-      <h3 class="highlight-text">
-        길찾기 구간 중 현재 제공하는 광역버스 노선이에요.
-      </h3>
-      <div v-if="providedRouteExists" class="route-info">
-        <ul>
-          <li
-            v-for="route in filteredRoutes"
-            :key="`${route.busNo}-${route.stationID}`"
-            @click="selectBusRoute(route)"
-          >
-            버스 번호: {{ route.busNo }} ({{ route.directionText }})
-          </li>
-        </ul>
-      </div>
-      <div v-if="loading" class="loading-spinner">로딩 중...</div>
+  <div class="result-page">
+    <div class="header">
+      <h2>대중교통 경로 검색 결과</h2>
+      <p>출발지: {{ fromLocation }}</p>
+      <p>도착지: {{ toLocation }}</p>
     </div>
+    <h3>길찾기 구간 중 현재 제공하는 광역버스 노선이에요.</h3>
+    <div v-if="providedRouteExists" class="route-info">
+      <ul>
+        <li
+          v-for="route in filteredRoutes"
+          :key="`${route.busNo}-${route.stationID}-${route.directionText}`"
+          @click="selectBusRoute(route)"
+        >
+          버스 번호: {{ route.busNo }} ({{ route.directionText }})
+        </li>
+      </ul>
+    </div>
+    <div v-if="loading" class="loading-spinner">로딩 중...</div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useStore } from 'vuex'
 import axios from 'axios'
 import apiConfig from '@/utils/API/apiConfig'
@@ -45,23 +41,25 @@ export default {
 
     const directionText = (direction) => (direction === 'up' ? '상행' : '하행')
 
-    // 버스 번호별 시간 조건을 확인
     const checkTimeRange = (busNo) => {
-      const hour = parseInt(store.state.time.hour, 10)
-      const minute = parseInt(store.state.time.minute, 10)
-      const currentTime = hour * 60 + minute
+      const { hour, minute } = store.getters['time/getTime']
+      const parsedHour = parseInt(hour, 10)
+      const parsedMinute = parseInt(minute, 10)
+      const currentTime = parsedHour * 60 + parsedMinute
 
-      console.log(`현재 시간: ${hour}시 ${minute}분 (분 단위: ${currentTime})`)
+      console.log(
+        `현재 시간: ${parsedHour}시 ${parsedMinute}분 (분 단위: ${currentTime})`
+      )
 
-      if (busNo === '5000' || busNo === '1112') {
-        return true // 5000번은 모든 시간대 표시
+      if (busNo === '5000' || busNo === '1112' || busNo === '6001') {
+        return true
       } else if (busNo === '5000A') {
-        return currentTime >= 300 && currentTime < 900 // 5:00 - 15:00
+        return currentTime >= 300 && currentTime < 900
       } else if (busNo === '5000B') {
         return (
           (currentTime >= 725 && currentTime < 1440) ||
           (currentTime >= 0 && currentTime < 180)
-        ) // 12:05 - 23:59, 0:00 - 3:00
+        )
       }
       return false
     }
@@ -94,41 +92,63 @@ export default {
         )
 
         const paths = response.data.result.path || []
-        const routeOptions = ['5000', '5000A', '5000B', '1112']
+        const routeOptions = ['5000', '5000A', '5000B', '1112', '6001']
         const allRoutes = []
 
-        // 전체 노선을 순회하여 버스 번호를 확인하고 시간대 조건을 체크
-        paths.forEach((route) => {
-          route.subPath.forEach((segment) => {
+        for (const route of paths) {
+          for (const segment of route.subPath) {
             if (segment.trafficType === 2) {
-              segment.lane.forEach((lane) => {
+              for (const lane of segment.lane) {
                 const busNo = lane.busNo
-                if (routeOptions.includes(busNo)) {
-                  console.log(
-                    `버스 번호 ${busNo}가 발견됨. 시간 조건 확인 중...`
-                  )
+                //console.log(`버스 번호 확인 중: ${busNo}`)
 
-                  // 시간 조건에 맞는 경우만 추가
-                  if (checkTimeRange(busNo)) {
-                    console.log(
-                      `조건에 맞는 버스 번호 - ${busNo}, 상행/하행 확인 중`
+                if (routeOptions.includes(busNo) && checkTimeRange(busNo)) {
+                  console.log(`조건에 맞는 버스 번호 - ${busNo}`)
+                  try {
+                    const stationDetailResponse = await axios.get(
+                      'https://api.odsay.com/v1/api/busLaneDetail',
+                      {
+                        params: {
+                          busID: lane.busID,
+                          apiKey: apiConfig.odsayApiKey
+                        }
+                      }
                     )
+
+                    const stations =
+                      stationDetailResponse.data.result.station || []
+                    const targetStation = stations.find(
+                      (station) => station.stationID === segment.startID
+                    )
+                    const direction =
+                      targetStation?.stationDirection === 2 ? 'up' : 'down'
+                    console.log(
+                      `상행/하행 판별: ${busNo}, 방향: ${direction}, 정류장 이름: ${segment.startName}`
+                    )
+
                     allRoutes.push({
                       busNo: busNo,
-                      directionText: directionText(segment.direction),
+                      directionText: directionText(direction),
                       stationID: segment.startID,
                       stationName: segment.startName
                     })
+                  } catch (error) {
+                    console.error(`busLaneDetail API 호출 오류 발생: ${error}`)
                   }
+                } else {
+                  // console.log(`시간 조건에 맞지 않음 - ${busNo}`)
                 }
-              })
+              }
             }
-          })
-        })
+          }
+        }
 
-        // 중복 제거 - 동일한 버스 번호가 여러 개 있을 경우 하나씩만 추가
         const uniqueRoutes = allRoutes.reduce((acc, current) => {
-          const duplicate = acc.find((route) => route.busNo === current.busNo)
+          const duplicate = acc.find(
+            (route) =>
+              route.busNo === current.busNo &&
+              route.directionText === current.directionText
+          )
           if (!duplicate) {
             acc.push(current)
           }
@@ -149,6 +169,23 @@ export default {
     }
 
     const selectBusRoute = (route) => {
+      console.log('다음 페이지로 전달되는 정보:', {
+        busNo: route.busNo,
+        direction: route.directionText,
+        stationID: route.stationID,
+        stationName: route.stationName,
+        fromLocation,
+        toLocation,
+        startX: store.state.departure.departure.coordinates?.x,
+        startY: store.state.departure.departure.coordinates?.y,
+        endX: store.state.destination.destination.coordinates?.x,
+        endY: store.state.destination.destination.coordinates?.y,
+        month: store.state.time.month,
+        day: store.state.time.day,
+        hour: store.state.time.hour,
+        minute: store.state.time.minute
+      })
+
       router.push({
         path: '/next-page',
         query: {
@@ -187,70 +224,16 @@ export default {
 </script>
 
 <style scoped>
-.background {
-  background-color: #eaeaea; /* 회색 배경 */
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.mobile-container {
-  width: 100%;
-  max-width: 425px; /* 모바일 화면 너비 */
-  margin: 0 auto;
-  padding: 25px;
-  background-color: white; /* 중앙 흰색 배경 */
-  height: 100vh;
-  overflow-y: auto;
-  border-radius: 10px; /* 모서리 둥글게 */
-}
-
-.header {
-  text-align: center;
-  margin-bottom: 15px;
-}
-h2 {
-  font-size: 18px;
-  font-weight: bold;
-  color: #625858;
-}
-.highlight-text {
-  font-size: 16px;
-  font-weight: bold;
-  color: #e5c7c7;
-  margin-top: 20px;
-  text-align: center;
+.result-page {
+  padding: 20px;
 }
 .route-info {
-  background-color: #f8f8f8;
-  padding: 15px;
-  border-radius: 8px;
-  margin-top: 15px;
-  cursor: pointer;
-}
-.route-info ul {
-  list-style: none;
-  padding: 0;
-}
-.route-info li {
-  font-size: 16px;
-  color: #625858;
-  font-weight: bold;
+  background-color: #f0f0f0;
   padding: 10px;
-  border-radius: 5px;
-  background-color: #eaeaea;
-  text-align: center;
+  margin-bottom: 15px;
 }
 .loading-spinner {
   font-size: 18px;
   color: #555;
-  text-align: center;
-  margin-top: 20px;
 }
 </style>

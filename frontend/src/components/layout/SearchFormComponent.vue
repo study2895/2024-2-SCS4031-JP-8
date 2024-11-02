@@ -1,7 +1,7 @@
 <template>
   <div class="search-form">
     <div class="input-group">
-      <label>출발지:</label>
+      <label><i class="fas fa-map-marker-alt"></i></label>
       <input
         v-model="departureName"
         placeholder="출발지를 입력하세요"
@@ -10,7 +10,7 @@
       />
     </div>
     <div class="input-group">
-      <label>도착지:</label>
+      <label><i class="fas fa-flag-checkered"></i></label>
       <input
         v-model="destinationName"
         placeholder="도착지를 입력하세요"
@@ -19,7 +19,7 @@
       />
     </div>
     <div class="input-group">
-      <label>출발 시각:</label>
+      <label><i class="fas fa-clock"></i></label>
       <input :value="formattedTime" @click="showTimeModal = true" readonly />
     </div>
 
@@ -198,12 +198,13 @@ onMounted(() => {
 })
 
 // 출발지와 도착지 검색 페이지로 이동하는 함수
-const goToSearchDeparture = () => router.push({ name: 'SearchDeparturePage' })
-const goToSearchDestination = () =>
-  router.push({ name: 'SearchDestinationPage' })
+const goToSearchDeparture = () => router.push({ path: '/search-departure' })
+const goToSearchDestination = () => router.push({ path: '/search-destination' })
 </script>
 
 <style scoped>
+@import '@fortawesome/fontawesome-free/css/all.css';
+
 .search-form {
   display: flex;
   flex-direction: column;
@@ -215,17 +216,17 @@ const goToSearchDestination = () =>
 
 .input-group {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  align-items: center;
+  gap: 10px;
 }
 
-.input-group label {
-  font-weight: bold;
+.input-group label i {
+  font-size: 18px;
   color: #333;
-  font-size: 14px;
 }
 
 .input-group input {
+  flex: 1;
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 5px;
