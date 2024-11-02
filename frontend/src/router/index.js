@@ -13,6 +13,7 @@ import KakaoAPIView from '@/views/MapTestPage/kakaoAPIView.vue'
 import plus from '@/views/MapTestPage/plus.vue'
 import Mobiletest from '@/views/real/mobiletest.vue'
 import Kakaokeyword from '@/views/MapTestPage/kakaokeyword.vue'
+import gonggong from '@/views/real/gonggong.vue'
 
 //real
 import MainPage from '@/views/real/MainPage.vue'
@@ -21,6 +22,7 @@ import SearchDestinationPage from '@/views/real/SearchDestinationPage.vue'
 import BusSearchPage from '@/views/real/BusSearchPage.vue'
 import BusRouteDetailsPage from '@/views/real/BusRouteDetailsPage.vue'
 import DetailedRoutePage from '@/views/real/DetailedRoutePage.vue'
+import Gonggong from '@/views/real/gonggong.vue'
 
 const routes = [
   { path: '/', component: MainPage }, // MainPage.vue
@@ -88,6 +90,11 @@ const routes = [
     path: '/odi',
     name: 'odi',
     component: odi
+  },
+  {
+    path: '/gong',
+    name: 'gong',
+    component: gonggong
   }
 
   // {
