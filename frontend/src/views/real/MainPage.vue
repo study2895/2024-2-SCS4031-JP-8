@@ -90,6 +90,10 @@ export default {
 </script>
 
 <style scoped>
+* {
+  font-family: 'Pretendard', sans-serif;
+}
+
 .background {
   background-color: #eaeaea;
   position: fixed;
