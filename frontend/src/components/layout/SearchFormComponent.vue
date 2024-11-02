@@ -205,6 +205,10 @@ const goToSearchDestination = () => router.push({ path: '/search-destination' })
 <style scoped>
 @import '@fortawesome/fontawesome-free/css/all.css';
 
+* {
+  font-family: 'Pretendard', sans-serif;
+}
+
 .search-form {
   display: flex;
   flex-direction: column;

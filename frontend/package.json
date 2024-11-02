@@ -22,7 +22,8 @@
     "vue-router": "^4.0.3",
     "vue3-naver-maps": "^4.2.0",
     "vuex": "^4.0.0",
-    "vuex-persistedstate": "^4.1.0"
+    "vuex-persistedstate": "^4.1.0",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",

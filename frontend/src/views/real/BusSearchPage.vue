@@ -224,16 +224,109 @@ export default {
 </script>
 
 <style scoped>
-.result-page {
-  padding: 20px;
+* {
+  font-family: 'Pretendard', sans-serif;
 }
-.route-info {
-  background-color: #f0f0f0;
-  padding: 10px;
+
+.background {
+  background-color: #eaeaea;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+.result-page {
+  width: 100%;
+  max-width: 425px;
+  margin: 0 auto;
+  padding: 25px;
+  background-color: white;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+.header {
+  padding-bottom: 20px;
+}
+
+.header h2 {
+  font-size: 18px;
+  margin: 0 0 5px;
+}
+
+.header p {
+  font-size: 14px;
+  margin: 0;
+  color: #666;
+}
+
+h3 {
+  font-size: 18px;
   margin-bottom: 15px;
 }
-.loading-spinner {
+
+.route-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.route-info ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.route-info li {
+  background-color: #f5f5f5;
+  padding: 20px;
+  border-radius: 18px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.route-info li::after {
+  content: '→';
   font-size: 18px;
-  color: #555;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  font-size: 16px;
+  color: #666;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.loading-spinner::after {
+  content: '...';
+  animation: pulse 1.5s infinite;
+  margin-left: 4px;
+}
+
+footer {
+  text-align: center;
+  padding-top: 20px;
+  font-size: 14px;
+  color: #666;
 }
 </style>
