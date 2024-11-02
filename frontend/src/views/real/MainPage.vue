@@ -99,6 +99,7 @@ export default {
   height: 100%;
   z-index: -1;
 }
+
 .mobile-container {
   width: 100%;
   max-width: 425px;
@@ -108,26 +109,68 @@ export default {
   height: 100vh;
   overflow-y: auto;
 }
+
 .header {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
 }
+
 h1 {
-  font-size: 18px;
+  font-size: 24px;
   font-weight: bold;
+  color: #333;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
+
 .search-button {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   background-color: #e5c7c7;
-  color: white;
+  color: #625858;
   font-size: 16px;
+  font-weight: bold;
   border: none;
   cursor: pointer;
   border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
 }
+
+.search-button:hover:not(:disabled) {
+  background-color: #d8b4b4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.search-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .search-button:disabled {
   background-color: #ccc;
+  color: #999;
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* 추가적인 스타일 개선 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 </style>

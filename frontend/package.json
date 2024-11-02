@@ -9,6 +9,7 @@
     "dev": "concurrently \"npm run serve\" \"npm run start-server\""
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.6.0",
     "axios": "^1.7.7",
     "core-js": "^3.8.3",
     "cors": "^2.8.5",
