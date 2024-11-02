@@ -29,9 +29,8 @@
         <div v-if="showTimeModal" class="modal">
           <div class="modal-content">
             <h3>출발 시각 설정</h3>
-
             <div class="horizontal-pickers">
-              <!-- 날짜 선택 (오늘, 내일, 이후 날짜들) -->
+              <!-- 날짜 선택 -->
               <div id="date-picker" class="picker scrollable">
                 <button
                   v-for="(day, index) in dateOptions"
@@ -42,7 +41,6 @@
                   {{ day.text }}
                 </button>
               </div>
-
               <!-- 시간과 분 선택 -->
               <div class="time-picker">
                 <div class="scrollable">
@@ -70,8 +68,7 @@
                 </div>
                 <span>분</span>
               </div>
-
-              <!-- 오전/오후 선택 (가로 배치) -->
+              <!-- 오전/오후 선택 -->
               <div class="meridiem-picker">
                 <button
                   @click="selectMeridiem('AM')"
@@ -87,7 +84,6 @@
                 </button>
               </div>
             </div>
-
             <button @click="updateTime" class="modal-button primary">
               설정
             </button>
@@ -107,8 +103,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useStore } from 'vuex'
+import { useRouter } from 'vue-router'
 
 const store = useStore()
+const router = useRouter()
 
 const showTimeModal = ref(false)
 const selectedMeridiem = ref('AM')
@@ -117,6 +115,7 @@ const selectedHour = ref('')
 const selectedMinute = ref('')
 const dateOptions = ref([])
 
+// 출발지와 도착지 이름
 const departureName = computed(
   () => store.state.departure.departure?.name || ''
 )
@@ -124,15 +123,14 @@ const destinationName = computed(
   () => store.state.destination.destination?.name || ''
 )
 
+// 선택된 출발 시각을 포맷하여 표시
 const formattedTime = computed(() => {
   const dayText =
     selectedDay.value === 'today'
       ? '오늘'
       : selectedDay.value === 'tomorrow'
       ? '내일'
-      : `${new Date().getMonth() + 1}월 ${selectedDay.value}일 (${
-          ['일', '월', '화', '수', '목', '금', '토'][new Date().getDay()]
-        })`
+      : `${new Date().getMonth() + 1}월 ${selectedDay.value}일`
   const meridiemText = selectedMeridiem.value === 'AM' ? '오전' : '오후'
   return `${dayText} ${meridiemText} ${selectedHour.value}:${
     selectedMinute.value < 10
@@ -141,6 +139,7 @@ const formattedTime = computed(() => {
   } 출발`
 })
 
+// 현재 시간을 기본값으로 설정
 const setCurrentTime = () => {
   const now = new Date()
   selectedDay.value = 'today'
@@ -149,14 +148,11 @@ const setCurrentTime = () => {
   selectedMinute.value = now.getMinutes()
 }
 
-const selectDay = (day) => {
-  selectedDay.value = day
-}
+// 날짜, 시간, 오전/오후 선택 처리 함수
+const selectDay = (day) => (selectedDay.value = day)
+const selectMeridiem = (meridiem) => (selectedMeridiem.value = meridiem)
 
-const selectMeridiem = (meridiem) => {
-  selectedMeridiem.value = meridiem
-}
-
+// 시간을 Vuex에 저장하고 모달 닫기
 const updateTime = () => {
   const month = new Date().getMonth() + 1
   const day =
@@ -174,6 +170,7 @@ const updateTime = () => {
   showTimeModal.value = false
 }
 
+// 날짜 옵션 생성
 const generateDateOptions = () => {
   const now = new Date()
   const endOfMonth = new Date(
@@ -188,13 +185,8 @@ const generateDateOptions = () => {
   for (let i = 2; i <= endOfMonth - now.getDate(); i++) {
     const futureDate = new Date()
     futureDate.setDate(now.getDate() + i)
-    const dayText = `${
-      futureDate.getMonth() + 1
-    }월 ${futureDate.getDate()}일 (${
-      ['일', '월', '화', '수', '목', '금', '토'][futureDate.getDay()]
-    })`
     dateOptions.value.push({
-      text: dayText,
+      text: `${futureDate.getMonth() + 1}월 ${futureDate.getDate()}일`,
       value: `${futureDate.getDate()}`
     })
   }
@@ -205,13 +197,10 @@ onMounted(() => {
   generateDateOptions()
 })
 
-const goToSearchDeparture = () => {
-  // Implement navigation logic
-}
-
-const goToSearchDestination = () => {
-  // Implement navigation logic
-}
+// 출발지와 도착지 검색 페이지로 이동하는 함수
+const goToSearchDeparture = () => router.push({ name: 'SearchDeparturePage' })
+const goToSearchDestination = () =>
+  router.push({ name: 'SearchDestinationPage' })
 </script>
 
 <style scoped>
