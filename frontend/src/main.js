@@ -7,6 +7,7 @@ import axios from 'axios'
 import './assets/styles/global.css'
 import { createNaverMap } from 'vue3-naver-maps'
 import apiConfig from './utils/API/apiConfig'
+import '@fortawesome/fontawesome-free/css/all.css'
 
 // Vue 앱 생성
 const app = createApp(App)
