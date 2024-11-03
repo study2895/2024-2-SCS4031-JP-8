@@ -2,7 +2,7 @@
   <div class="background">
     <div class="mobile-container">
       <header class="header">
-        <h1>또타자</h1>
+        <h1>만차 버스 길찾기</h1>
       </header>
       <SearchFormComponent />
       <button
@@ -120,7 +120,7 @@ export default {
 }
 
 h1 {
-  font-size: 24px;
+  font-size: 17px;
   font-weight: bold;
   color: #333;
   letter-spacing: 1px;

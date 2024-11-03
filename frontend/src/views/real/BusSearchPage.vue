@@ -5,7 +5,7 @@
       <p>출발지: {{ fromLocation }}</p>
       <p>도착지: {{ toLocation }}</p>
     </div>
-    <h3>길찾기 구간 중 현재 제공하는 광역버스 노선이에요.</h3>
+    <h3>길찾기 구간 중 <br />현재 제공하는 <br />광역버스 노선이에요.</h3>
     <div v-if="providedRouteExists" class="route-info">
       <ul>
         <li
@@ -239,8 +239,8 @@ export default {
 }
 
 .result-page {
-  width: 100%;
-  max-width: 425px;
+  min-width: 425px;
+
   margin: 0 auto;
   padding: 25px;
   background-color: white;

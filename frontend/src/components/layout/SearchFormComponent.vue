@@ -304,7 +304,7 @@ const goToSearchDestination = () => router.push({ path: '/search-destination' })
 }
 
 .picker button.selected {
-  background-color: #000;
+  background-color: #ab6c6c;
   color: #fff;
   font-weight: bold;
 }
@@ -353,7 +353,7 @@ const goToSearchDestination = () => router.push({ path: '/search-destination' })
 }
 
 .time-option.selected {
-  background-color: #000;
+  background-color: #ab6c6c;
   color: #fff;
   font-weight: bold;
 }
@@ -362,7 +362,7 @@ button {
   padding: 8px 16px;
   border: none;
   border-radius: 5px;
-  background-color: #3182f6;
+  background-color: #e5c7c7;
   color: white;
   font-weight: bold;
   cursor: pointer;
@@ -371,7 +371,7 @@ button {
 }
 
 button:hover {
-  background-color: #1c64f2;
+  background-color: #d8b4b4;
 }
 
 button:active {
@@ -379,7 +379,7 @@ button:active {
 }
 
 button.selected {
-  background-color: #1c64f2;
+  background-color: #d8b4b4;
 }
 
 .modal-button {
@@ -397,17 +397,17 @@ button.selected {
 }
 
 .meridiem-picker button.selected {
-  background-color: #3182f6;
+  background-color: #e5c7c7;
   color: white;
 }
 
 .modal-button.primary {
-  background-color: #3182f6;
+  background-color: #e5c7c7;
   color: white;
 }
 
 .modal-button.primary:hover {
-  background-color: #1c64f2;
+  background-color: #d8b4b4;
 }
 
 .modal-button.secondary {
