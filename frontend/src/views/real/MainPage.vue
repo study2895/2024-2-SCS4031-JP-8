@@ -126,7 +126,12 @@ export default {
           this.location.latitude,
           this.location.longitude
         ),
-        zoom: 13
+        zoom: 13,
+        zoomControl: true, // 확대/축소 버튼 추가
+        scaleControl: false,
+        logoControl: false,
+        mapDataControl: false,
+        minZoom: 6
       })
 
       // 위치에 마커 추가
