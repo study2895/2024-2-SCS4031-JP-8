@@ -25,6 +25,13 @@
       <button @click="setCurrentTime" class="realtime-button">실시간</button>
     </div>
 
+    <!-- 출발지와 도착지 바꾸기 버튼 -->
+    <div class="switch-button-container">
+      <button @click="switchLocations" class="switch-button">
+        출발지와 도착지 바꾸기
+      </button>
+    </div>
+
     <!-- 출발 시각 설정 모달 -->
     <Teleport to="body">
       <transition name="modal-fade">
@@ -118,12 +125,14 @@ const selectedMinute = ref('')
 const dateOptions = ref([])
 
 // 출발지와 도착지 이름
-const departureName = computed(
-  () => store.state.departure.departure?.name || ''
-)
-const destinationName = computed(
-  () => store.state.destination.destination?.name || ''
-)
+const departureName = computed({
+  get: () => store.state.departure.departure?.name || '',
+  set: (value) => store.commit('departure/setDeparture', { name: value })
+})
+const destinationName = computed({
+  get: () => store.state.destination.destination?.name || '',
+  set: (value) => store.commit('destination/setDestination', { name: value })
+})
 
 // 선택된 출발 시각을 포맷하여 표시
 const formattedTime = computed(() => {
@@ -148,6 +157,13 @@ const setCurrentTime = () => {
   selectedMeridiem.value = now.getHours() >= 12 ? 'PM' : 'AM'
   selectedHour.value = now.getHours() % 12 || 12
   selectedMinute.value = now.getMinutes()
+}
+
+// 출발지와 도착지 바꾸기 함수
+const switchLocations = () => {
+  const tempDeparture = departureName.value
+  departureName.value = destinationName.value
+  destinationName.value = tempDeparture
 }
 
 // 날짜, 시간, 오전/오후 선택 처리 함수
@@ -254,6 +270,28 @@ const goToSearchDestination = () => router.push({ path: '/search-destination' })
 
 .realtime-button:hover {
   background-color: #d8b4b4;
+}
+
+/* 출발지와 도착지 바꾸기 버튼 스타일 */
+.switch-button-container {
+  display: flex;
+  justify-content: center;
+}
+
+.switch-button {
+  padding: 10px 20px;
+  background-color: #f3c1c1;
+  color: #333;
+  font-size: 14px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.switch-button:hover {
+  background-color: #e5b1b1;
 }
 
 .modal {
