@@ -81,11 +81,11 @@ const routes = [
   //   component: NaverLocationSearchView
   // },
 
-  // {
-  //   path: '/geo',
-  //   name: 'GeologicalAPITest',
-  //   component: GeologicalAPITest
-  // },
+  {
+    path: '/geo',
+    name: 'GeologicalAPITest',
+    component: GeologicalAPITest
+  },
   {
     path: '/odi',
     name: 'odi',
