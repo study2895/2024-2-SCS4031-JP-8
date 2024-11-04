@@ -32,6 +32,20 @@
         </ul>
       </div>
 
+      <!-- 즐겨찾기 목록 -->
+      <div v-if="favorites.length > 0" class="favorites">
+        <h3>즐겨찾기</h3>
+        <ul>
+          <li v-for="(favorite, index) in favorites" :key="index">
+            <span @click="applyRecentSearch(favorite.query)">
+              {{ favorite.query }} - {{ favorite.date }}
+            </span>
+            <button @click="removeFavorite(index)">★</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 검색 결과 목록 -->
       <ul v-if="places.length > 0" class="place-list">
         <li v-for="(place, index) in places" :key="index" class="place-item">
           <h3>{{ place.place_name }}</h3>
@@ -39,6 +53,10 @@
           <p>{{ place.category_name }}</p>
           <p>{{ place.phone || '정보 없음' }}</p>
           <button @click="toggleMap(index, place)">지도</button>
+          <!-- 즐겨찾기 버튼 -->
+          <button @click="toggleFavorite(place)">
+            {{ isFavorite(place) ? '★' : '☆' }}
+          </button>
 
           <!-- 지도 표시 영역 -->
           <div
@@ -62,6 +80,7 @@ export default {
       keyword: '',
       places: [],
       recentSearches: [],
+      favorites: [], // 즐겨찾기 목록
       mapVisibleIndex: null // 현재 표시된 지도 인덱스
     }
   },
@@ -126,6 +145,10 @@ export default {
       if (storedSearches) {
         this.recentSearches = JSON.parse(storedSearches)
       }
+      const storedFavorites = localStorage.getItem('favorites')
+      if (storedFavorites) {
+        this.favorites = JSON.parse(storedFavorites)
+      }
     },
     applyRecentSearch(query) {
       this.keyword = query
@@ -137,6 +160,32 @@ export default {
         'recentSearches',
         JSON.stringify(this.recentSearches)
       )
+    },
+    toggleFavorite(place) {
+      const favoriteIndex = this.favorites.findIndex(
+        (fav) => fav.place_name === place.place_name
+      )
+      if (favoriteIndex === -1) {
+        // 즐겨찾기에 추가
+        this.favorites.push({
+          query: place.place_name,
+          date: new Date().toLocaleDateString('ko-KR', {
+            month: 'numeric',
+            day: 'numeric'
+          })
+        })
+      } else {
+        // 이미 즐겨찾기에 있는 경우 제거
+        this.favorites.splice(favoriteIndex, 1)
+      }
+      localStorage.setItem('favorites', JSON.stringify(this.favorites))
+    },
+    removeFavorite(index) {
+      this.favorites.splice(index, 1)
+      localStorage.setItem('favorites', JSON.stringify(this.favorites))
+    },
+    isFavorite(place) {
+      return this.favorites.some((fav) => fav.query === place.place_name)
     },
     toggleMap(index, place) {
       if (this.mapVisibleIndex === index) {
@@ -235,34 +284,40 @@ button:hover {
   cursor: pointer;
 }
 
-.recent-searches h3 {
+.recent-searches h3,
+.favorites h3 {
   font-size: 18px;
   margin-bottom: 10px;
   color: #333;
 }
 
-.recent-searches ul {
+.recent-searches ul,
+.favorites ul {
   list-style: none;
   padding: 0;
 }
 
-.recent-searches li {
+.recent-searches li,
+.favorites li {
   display: flex;
   justify-content: space-between;
   padding: 5px 0;
   cursor: pointer;
 }
 
-.recent-searches li span {
+.recent-searches li span,
+.favorites li span {
   color: #333;
   flex: 1;
 }
 
-.recent-searches li span:hover {
+.recent-searches li span:hover,
+.favorites li span:hover {
   text-decoration: underline;
 }
 
-.recent-searches li button {
+.recent-searches li button,
+.favorites li button {
   background: none;
   border: none;
   color: #888;
