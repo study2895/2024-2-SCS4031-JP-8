@@ -21,6 +21,8 @@
     <div class="input-group">
       <label><i class="fas fa-clock"></i></label>
       <input :value="formattedTime" @click="showTimeModal = true" readonly />
+      <!-- 실시간 버튼 추가 -->
+      <button @click="setCurrentTime" class="realtime-button">실시간</button>
     </div>
 
     <!-- 출발 시각 설정 모달 -->
@@ -235,6 +237,23 @@ const goToSearchDestination = () => router.push({ path: '/search-destination' })
   border: 1px solid #ddd;
   border-radius: 5px;
   font-size: 14px;
+}
+
+/* 실시간 버튼 스타일 */
+.realtime-button {
+  padding: 8px 10px;
+  background-color: #e5c7c7;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.realtime-button:hover {
+  background-color: #d8b4b4;
 }
 
 .modal {
