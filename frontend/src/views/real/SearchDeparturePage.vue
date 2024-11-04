@@ -24,25 +24,28 @@
         <h3>최근 검색</h3>
         <ul>
           <li v-for="(search, index) in recentSearches" :key="index">
-            <span @click="applyRecentSearch(search.query)"
-              >{{ search.query }} - {{ search.date }}</span
-            >
+            <span @click="applyRecentSearch(search.query)">
+              {{ search.query }} - {{ search.date }}
+            </span>
             <button @click="removeRecentSearch(index)">x</button>
           </li>
         </ul>
       </div>
 
       <ul v-if="places.length > 0" class="place-list">
-        <li
-          v-for="(place, index) in places"
-          :key="index"
-          @click="selectPlace(place)"
-          class="place-item"
-        >
+        <li v-for="(place, index) in places" :key="index" class="place-item">
           <h3>{{ place.place_name }}</h3>
           <p>{{ place.address_name }}</p>
           <p>{{ place.category_name }}</p>
           <p>{{ place.phone || '정보 없음' }}</p>
+          <button @click="toggleMap(index, place)">지도</button>
+
+          <!-- 지도 표시 영역 -->
+          <div
+            v-if="mapVisibleIndex === index"
+            class="mini-map"
+            :ref="'map' + index"
+          ></div>
         </li>
       </ul>
       <p v-else class="no-results">검색 결과가 없습니다.</p>
@@ -51,25 +54,24 @@
 </template>
 
 <script>
-import { mapMutations } from 'vuex'
+import { ref } from 'vue'
 
 export default {
   data() {
     return {
       keyword: '',
       places: [],
-      recentSearches: []
+      recentSearches: [],
+      mapVisibleIndex: null // 현재 표시된 지도 인덱스
     }
   },
   methods: {
-    ...mapMutations('departure', ['setDeparture']),
     async searchPlaces() {
       if (!this.keyword.trim()) {
         alert('키워드를 입력해주세요!')
         return
       }
-
-      this.addRecentSearch(this.keyword) // 최근 검색 저장
+      this.addRecentSearch(this.keyword)
       try {
         const response = await fetch(
           `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(
@@ -81,11 +83,9 @@ export default {
             }
           }
         )
-
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
-
         const data = await response.json()
         this.places = data.documents
       } catch (error) {
@@ -105,7 +105,6 @@ export default {
       const existingIndex = this.recentSearches.findIndex(
         (item) => item.query === query
       )
-
       if (existingIndex !== -1) {
         this.recentSearches[existingIndex].date = date
         this.recentSearches.unshift(
@@ -117,7 +116,6 @@ export default {
         }
         this.recentSearches.unshift({ query, date })
       }
-
       localStorage.setItem(
         'recentSearches',
         JSON.stringify(this.recentSearches)
@@ -140,12 +138,27 @@ export default {
         JSON.stringify(this.recentSearches)
       )
     },
-    selectPlace(place) {
-      this.setDeparture({
-        name: place.place_name,
-        coordinates: { x: place.x, y: place.y }
+    toggleMap(index, place) {
+      if (this.mapVisibleIndex === index) {
+        this.mapVisibleIndex = null
+      } else {
+        this.mapVisibleIndex = index
+        this.$nextTick(() => {
+          this.showMap(index, place.x, place.y)
+        })
+      }
+    },
+    showMap(index, x, y) {
+      const mapContainer = this.$refs[`map${index}`][0]
+      const map = new naver.maps.Map(mapContainer, {
+        center: new naver.maps.LatLng(y, x),
+        zoom: 15
       })
-      this.$router.push('/')
+
+      new naver.maps.Marker({
+        position: new naver.maps.LatLng(y, x),
+        map: map
+      })
     }
   },
   mounted() {
@@ -212,7 +225,7 @@ button:hover {
 
 .clear-button {
   position: absolute;
-  right: 90px; /* 위치 조정 */
+  right: 90px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
@@ -285,5 +298,12 @@ button:hover {
   text-align: center;
   font-size: 14px;
   color: #888;
+}
+
+/* 지도 표시 스타일 */
+.mini-map {
+  width: 100%;
+  height: 200px;
+  margin-top: 10px;
 }
 </style>

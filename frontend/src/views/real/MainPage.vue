@@ -13,6 +13,14 @@
       >
         길 찾기
       </button>
+
+      <!-- 내 위치 다시 불러오기 버튼 -->
+      <button class="location-button" @click="getLocation">
+        내 위치 다시 불러오기
+      </button>
+
+      <!-- 네이버 지도 -->
+      <div class="map-container" ref="mapContainer"></div>
     </div>
   </div>
 </template>
@@ -24,6 +32,14 @@ import { mapState, mapActions } from 'vuex'
 export default {
   components: {
     SearchFormComponent
+  },
+  data() {
+    return {
+      location: {
+        latitude: 37.51347, // 기본 위치 (서울)
+        longitude: 127.041722
+      }
+    }
   },
   computed: {
     ...mapState('departure', {
@@ -68,9 +84,6 @@ export default {
         return
       }
 
-      console.log('Search routes clicked!')
-
-      // 좌표 및 시간 정보와 함께 페이지 이동
       this.$router.push({
         path: '/bus-search',
         query: {
@@ -84,7 +97,55 @@ export default {
           minute: this.$store.state.time.minute
         }
       })
+    },
+    getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          this.showPosition,
+          this.showError
+        )
+      } else {
+        alert('이 브라우저는 Geolocation을 지원하지 않습니다.')
+        this.initMap() // Geolocation이 없을 때 기본 위치로 초기화
+      }
+    },
+    showPosition(position) {
+      this.location = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude
+      }
+      this.initMap()
+    },
+    showError(error) {
+      alert('위치를 불러오지 못했습니다. 기본 위치로 설정합니다.')
+      this.initMap() // 오류 발생 시 기본 위치로 지도 초기화
+    },
+    initMap() {
+      const map = new naver.maps.Map(this.$refs.mapContainer, {
+        center: new naver.maps.LatLng(
+          this.location.latitude,
+          this.location.longitude
+        ),
+        zoom: 13,
+        zoomControl: true, // 확대/축소 버튼 추가
+        scaleControl: false,
+        logoControl: false,
+        mapDataControl: false,
+        minZoom: 6
+      })
+
+      // 위치에 마커 추가
+      new naver.maps.Marker({
+        position: new naver.maps.LatLng(
+          this.location.latitude,
+          this.location.longitude
+        ),
+        map: map
+      })
     }
+  },
+  mounted() {
+    this.getLocation() // 컴포넌트가 마운트되면 위치 요청
   }
 }
 </script>
@@ -160,21 +221,23 @@ h1 {
   box-shadow: none;
 }
 
-/* 추가적인 스타일 개선 */
-::-webkit-scrollbar {
-  width: 8px;
+.location-button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  background-color: #f0f0f0;
+  color: #444;
+  font-size: 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
+.map-container {
+  width: 100%;
+  height: 300px;
+  margin-top: 20px;
+  border-radius: 8px;
+  overflow: hidden;
 }
 </style>
