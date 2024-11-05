@@ -28,6 +28,20 @@
         ✕
       </button>
     </div>
+
+    <!-- 최근 경로 -->
+    <!-- <div v-if="recentRoutes.length > 0" class="recent-routes">
+      <h3>최근 경로</h3>
+      <ul>
+        <li v-for="(route, index) in recentRoutes" :key="index">
+          <span @click="applyRecentRoute(route)">
+            {{ route.departureName }} ➔ {{ route.destinationName }}
+          </span>
+          <button @click="removeRecentRoute(index)">x</button>
+        </li>
+      </ul>
+    </div> -->
+
     <div class="input-group">
       <label><i class="fas fa-clock"></i></label>
       <input :value="formattedTime" @click="openTimeModal" readonly />
@@ -546,5 +560,35 @@ button.selected {
   font-size: 16px;
   color: #888;
   cursor: pointer;
+}
+.recent-routes h3 {
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.recent-routes ul {
+  list-style: none;
+  padding: 0;
+}
+
+.recent-routes li {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  cursor: pointer;
+}
+
+.recent-routes li span:hover {
+  text-decoration: underline;
+}
+
+.recent-routes li button {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 14px;
+  cursor: pointer;
+  margin-left: 10px;
 }
 </style>
