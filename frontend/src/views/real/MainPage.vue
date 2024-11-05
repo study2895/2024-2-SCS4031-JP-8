@@ -3,6 +3,7 @@
     <div class="mobile-container">
       <header class="header">
         <h1>만차 버스 길찾기</h1>
+        <SlidingMenu />
       </header>
       <SearchFormComponent />
       <button
@@ -28,10 +29,12 @@
 <script>
 import SearchFormComponent from '@/components/layout/SearchFormComponent.vue'
 import { mapState, mapActions } from 'vuex'
+import SlidingMenu from '../SlidingMenu.vue'
 
 export default {
   components: {
-    SearchFormComponent
+    SearchFormComponent,
+    SlidingMenu
   },
   data() {
     return {
@@ -43,11 +46,12 @@ export default {
   },
   computed: {
     ...mapState('departure', {
-      departureName: (state) => state.departure?.name || '',
+      departureName: (state) => state.departure?.name || '출발지를 입력하세요',
       departureCoordinates: (state) => state.departure?.coordinates || {}
     }),
     ...mapState('destination', {
-      destinationName: (state) => state.destination?.name || '',
+      destinationName: (state) =>
+        state.destination?.name || '도착지를 입력하세요',
       destinationCoordinates: (state) => state.destination?.coordinates || {}
     }),
     ...mapState('time', {
@@ -58,8 +62,8 @@ export default {
     }),
     canSearch() {
       return (
-        this.departureName &&
-        this.destinationName &&
+        this.departureName !== '출발지를 입력하세요' &&
+        this.destinationName !== '도착지를 입력하세요' &&
         this.month &&
         this.day &&
         this.hour &&
@@ -121,26 +125,34 @@ export default {
       this.initMap() // 오류 발생 시 기본 위치로 지도 초기화
     },
     initMap() {
-      const map = new naver.maps.Map(this.$refs.mapContainer, {
-        center: new naver.maps.LatLng(
-          this.location.latitude,
-          this.location.longitude
-        ),
-        zoom: 13,
-        zoomControl: true, // 확대/축소 버튼 추가
-        scaleControl: false,
-        logoControl: false,
-        mapDataControl: false,
-        minZoom: 6
-      })
+      this.$nextTick(() => {
+        const mapContainer = this.$refs.mapContainer
 
-      // 위치에 마커 추가
-      new naver.maps.Marker({
-        position: new naver.maps.LatLng(
-          this.location.latitude,
-          this.location.longitude
-        ),
-        map: map
+        if (mapContainer) {
+          const map = new naver.maps.Map(mapContainer, {
+            center: new naver.maps.LatLng(
+              this.location.latitude,
+              this.location.longitude
+            ),
+            zoom: 13,
+            zoomControl: true, // 확대/축소 버튼 추가
+            scaleControl: false,
+            logoControl: false,
+            mapDataControl: false,
+            minZoom: 6
+          })
+
+          // 위치에 마커 추가
+          new naver.maps.Marker({
+            position: new naver.maps.LatLng(
+              this.location.latitude,
+              this.location.longitude
+            ),
+            map: map
+          })
+        } else {
+          console.error('지도 컨테이너를 찾을 수 없습니다.')
+        }
       })
     }
   },
