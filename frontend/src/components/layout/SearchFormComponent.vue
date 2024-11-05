@@ -30,18 +30,16 @@
     </div>
     <div class="input-group">
       <label><i class="fas fa-clock"></i></label>
-      <input :value="formattedTime" @click="showTimeModal = true" readonly />
+      <input :value="formattedTime" @click="openTimeModal" readonly />
       <button @click="setCurrentTime" class="realtime-button">실시간</button>
     </div>
 
-    <!-- 출발지와 도착지 바꾸기 버튼 -->
     <div class="switch-button-container">
       <button @click="switchLocations" class="switch-button">
         출발지와 도착지 바꾸기
       </button>
     </div>
 
-    <!-- 출발 시각 설정 모달 -->
     <Teleport to="body">
       <transition name="modal-fade">
         <div v-if="showTimeModal" class="modal">
@@ -52,8 +50,8 @@
                 <button
                   v-for="(day, index) in dateOptions"
                   :key="index"
-                  @click="selectDay(day.value)"
-                  :class="{ selected: selectedDay === day.value }"
+                  @click="tempSelectedDay = day.value"
+                  :class="{ selected: tempSelectedDay === day.value }"
                 >
                   {{ day.text }}
                 </button>
@@ -64,8 +62,8 @@
                     v-for="hour in 12"
                     :key="hour"
                     class="time-option"
-                    :class="{ selected: selectedHour === hour }"
-                    @click="selectedHour = hour"
+                    :class="{ selected: tempSelectedHour === hour }"
+                    @click="tempSelectedHour = hour"
                   >
                     {{ hour }}
                   </div>
@@ -76,8 +74,10 @@
                     v-for="minute in 6"
                     :key="minute"
                     class="time-option"
-                    :class="{ selected: selectedMinute === (minute - 1) * 10 }"
-                    @click="selectedMinute = (minute - 1) * 10"
+                    :class="{
+                      selected: tempSelectedMinute === (minute - 1) * 10
+                    }"
+                    @click="tempSelectedMinute = (minute - 1) * 10"
                   >
                     {{ (minute - 1) * 10 }}
                   </div>
@@ -86,26 +86,23 @@
               </div>
               <div class="meridiem-picker">
                 <button
-                  @click="selectMeridiem('AM')"
-                  :class="{ selected: selectedMeridiem === 'AM' }"
+                  @click="tempSelectedMeridiem = 'AM'"
+                  :class="{ selected: tempSelectedMeridiem === 'AM' }"
                 >
                   오전
                 </button>
                 <button
-                  @click="selectMeridiem('PM')"
-                  :class="{ selected: selectedMeridiem === 'PM' }"
+                  @click="tempSelectedMeridiem = 'PM'"
+                  :class="{ selected: tempSelectedMeridiem === 'PM' }"
                 >
                   오후
                 </button>
               </div>
             </div>
-            <button @click="updateTime" class="modal-button primary">
+            <button @click="confirmTime" class="modal-button primary">
               설정
             </button>
-            <button
-              @click="showTimeModal = false"
-              class="modal-button secondary"
-            >
+            <button @click="closeTimeModal" class="modal-button secondary">
               닫기
             </button>
           </div>
@@ -128,6 +125,12 @@ const selectedMeridiem = ref('AM')
 const selectedDay = ref('today')
 const selectedHour = ref('')
 const selectedMinute = ref('')
+
+const tempSelectedMeridiem = ref('AM')
+const tempSelectedDay = ref('today')
+const tempSelectedHour = ref('')
+const tempSelectedMinute = ref('')
+
 const dateOptions = ref([])
 
 const departureName = computed({
@@ -139,7 +142,6 @@ const destinationName = computed({
   set: (value) => store.commit('destination/setDestination', { name: value })
 })
 
-// 출발지와 도착지 지우기 함수
 const clearDeparture = () => {
   store.commit('departure/setDeparture', { name: '', coordinates: {} })
 }
@@ -170,16 +172,27 @@ const setCurrentTime = () => {
   selectedMinute.value = now.getMinutes()
 }
 
+// 모달을 열 때 기존의 선택 값을 임시 값에 복사
+const openTimeModal = () => {
+  tempSelectedDay.value = selectedDay.value
+  tempSelectedMeridiem.value = selectedMeridiem.value
+  tempSelectedHour.value = selectedHour.value
+  tempSelectedMinute.value = selectedMinute.value
+  showTimeModal.value = true
+}
+
 const switchLocations = () => {
   const tempDeparture = departureName.value
   departureName.value = destinationName.value
   destinationName.value = tempDeparture
 }
 
-const selectDay = (day) => (selectedDay.value = day)
-const selectMeridiem = (meridiem) => (selectedMeridiem.value = meridiem)
+const confirmTime = () => {
+  selectedDay.value = tempSelectedDay.value
+  selectedMeridiem.value = tempSelectedMeridiem.value
+  selectedHour.value = tempSelectedHour.value
+  selectedMinute.value = tempSelectedMinute.value
 
-const updateTime = () => {
   const month = new Date().getMonth() + 1
   const day =
     selectedDay.value === 'today'
@@ -193,6 +206,11 @@ const updateTime = () => {
       : selectedHour.value
   const minute = selectedMinute.value
   store.commit('time/setTime', { month, day, hour, minute })
+  showTimeModal.value = false
+}
+
+// 닫기 버튼 클릭 시 임시 값을 초기화하고 모달 닫기
+const closeTimeModal = () => {
   showTimeModal.value = false
 }
 
