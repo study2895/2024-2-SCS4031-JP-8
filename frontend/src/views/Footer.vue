@@ -103,4 +103,19 @@ button {
   outline: none; /* 포커스 outline 제거 */
   cursor: pointer;
 }
+button:focus {
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+}
+button:hover {
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+}
+button:active {
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+}
 </style>
