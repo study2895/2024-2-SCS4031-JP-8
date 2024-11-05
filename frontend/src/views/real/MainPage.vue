@@ -2,6 +2,12 @@
   <div class="background">
     <div class="mobile-container">
       <header class="header">
+        <img
+          :src="require('@/assets/Icons/MainLogo.svg')"
+          alt="Logo"
+          style="margin-right: -170px"
+        />
+
         <h1>만차 버스 길찾기</h1>
         <SlidingMenu />
       </header>
@@ -22,6 +28,7 @@
 
       <!-- 네이버 지도 -->
       <div class="map-container" ref="mapContainer"></div>
+      <Footer />
     </div>
   </div>
 </template>
@@ -30,11 +37,14 @@
 import SearchFormComponent from '@/components/layout/SearchFormComponent.vue'
 import { mapState, mapActions } from 'vuex'
 import SlidingMenu from '../SlidingMenu.vue'
+import Footer from '../Footer.vue'
+import MainLogo from '@/assets/Icons/MainLogo.svg'
 
 export default {
   components: {
     SearchFormComponent,
-    SlidingMenu
+    SlidingMenu,
+    Footer
   },
   data() {
     return {
@@ -134,7 +144,7 @@ export default {
               this.location.latitude,
               this.location.longitude
             ),
-            zoom: 13,
+            zoom: 16,
             zoomControl: true, // 확대/축소 버튼 추가
             scaleControl: false,
             logoControl: false,
