@@ -8,6 +8,9 @@
         @focus="goToSearchDeparture"
         readonly
       />
+      <button v-if="departureName" @click="clearDeparture" class="clear-button">
+        ✕
+      </button>
     </div>
     <div class="input-group">
       <label><i class="fas fa-flag-checkered"></i></label>
@@ -17,11 +20,17 @@
         @focus="goToSearchDestination"
         readonly
       />
+      <button
+        v-if="destinationName"
+        @click="clearDestination"
+        class="clear-button"
+      >
+        ✕
+      </button>
     </div>
     <div class="input-group">
       <label><i class="fas fa-clock"></i></label>
       <input :value="formattedTime" @click="showTimeModal = true" readonly />
-      <!-- 실시간 버튼 추가 -->
       <button @click="setCurrentTime" class="realtime-button">실시간</button>
     </div>
 
@@ -39,7 +48,6 @@
           <div class="modal-content">
             <h3>출발 시각 설정</h3>
             <div class="horizontal-pickers">
-              <!-- 날짜 선택 -->
               <div id="date-picker" class="picker scrollable">
                 <button
                   v-for="(day, index) in dateOptions"
@@ -50,7 +58,6 @@
                   {{ day.text }}
                 </button>
               </div>
-              <!-- 시간과 분 선택 -->
               <div class="time-picker">
                 <div class="scrollable">
                   <div
@@ -77,7 +84,6 @@
                 </div>
                 <span>분</span>
               </div>
-              <!-- 오전/오후 선택 -->
               <div class="meridiem-picker">
                 <button
                   @click="selectMeridiem('AM')"
@@ -124,7 +130,6 @@ const selectedHour = ref('')
 const selectedMinute = ref('')
 const dateOptions = ref([])
 
-// 출발지와 도착지 이름
 const departureName = computed({
   get: () => store.state.departure.departure?.name || '',
   set: (value) => store.commit('departure/setDeparture', { name: value })
@@ -134,7 +139,14 @@ const destinationName = computed({
   set: (value) => store.commit('destination/setDestination', { name: value })
 })
 
-// 선택된 출발 시각을 포맷하여 표시
+// 출발지와 도착지 지우기 함수
+const clearDeparture = () => {
+  store.commit('departure/setDeparture', { name: '', coordinates: {} })
+}
+const clearDestination = () => {
+  store.commit('destination/setDestination', { name: '', coordinates: {} })
+}
+
 const formattedTime = computed(() => {
   const dayText =
     selectedDay.value === 'today'
@@ -150,7 +162,6 @@ const formattedTime = computed(() => {
   } 출발`
 })
 
-// 현재 시간을 기본값으로 설정
 const setCurrentTime = () => {
   const now = new Date()
   selectedDay.value = 'today'
@@ -159,18 +170,15 @@ const setCurrentTime = () => {
   selectedMinute.value = now.getMinutes()
 }
 
-// 출발지와 도착지 바꾸기 함수
 const switchLocations = () => {
   const tempDeparture = departureName.value
   departureName.value = destinationName.value
   destinationName.value = tempDeparture
 }
 
-// 날짜, 시간, 오전/오후 선택 처리 함수
 const selectDay = (day) => (selectedDay.value = day)
 const selectMeridiem = (meridiem) => (selectedMeridiem.value = meridiem)
 
-// 시간을 Vuex에 저장하고 모달 닫기
 const updateTime = () => {
   const month = new Date().getMonth() + 1
   const day =
@@ -188,7 +196,6 @@ const updateTime = () => {
   showTimeModal.value = false
 }
 
-// 날짜 옵션 생성
 const generateDateOptions = () => {
   const now = new Date()
   const endOfMonth = new Date(
@@ -215,7 +222,6 @@ onMounted(() => {
   generateDateOptions()
 })
 
-// 출발지와 도착지 검색 페이지로 이동하는 함수
 const goToSearchDeparture = () => router.push({ path: '/search-departure' })
 const goToSearchDestination = () => router.push({ path: '/search-destination' })
 </script>
@@ -514,5 +520,13 @@ button.selected {
 
 #date-picker {
   width: 30%;
+}
+
+.clear-button {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #888;
+  cursor: pointer;
 }
 </style>
