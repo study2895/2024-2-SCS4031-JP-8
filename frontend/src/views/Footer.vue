@@ -30,13 +30,7 @@
                   >노선도</a
                 >
               </li>
-              <li>
-                <a
-                  href="#"
-                  class="text-xs text-gray-600 transition-colors duration-200 hover:text-orange-500"
-                  >요금 정보</a
-                >
-              </li>
+
               <li>
                 <a
                   href="#"
