@@ -137,7 +137,7 @@ export default {
               this.location.latitude,
               this.location.longitude
             ),
-            zoom: 13,
+            zoom: 16,
             zoomControl: true, // 확대/축소 버튼 추가
             scaleControl: false,
             logoControl: false,
