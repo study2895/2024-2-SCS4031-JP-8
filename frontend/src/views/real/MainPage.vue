@@ -2,6 +2,12 @@
   <div class="background">
     <div class="mobile-container">
       <header class="header">
+        <img
+          :src="require('@/assets/Icons/MainLogo.svg')"
+          alt="Logo"
+          style="margin-right: -170px"
+        />
+
         <h1>만차 버스 길찾기</h1>
         <SlidingMenu />
       </header>
@@ -32,6 +38,7 @@ import SearchFormComponent from '@/components/layout/SearchFormComponent.vue'
 import { mapState, mapActions } from 'vuex'
 import SlidingMenu from '../SlidingMenu.vue'
 import Footer from '../Footer.vue'
+import MainLogo from '@/assets/Icons/MainLogo.svg'
 
 export default {
   components: {
