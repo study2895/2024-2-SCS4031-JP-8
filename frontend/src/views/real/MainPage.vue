@@ -22,6 +22,7 @@
 
       <!-- 네이버 지도 -->
       <div class="map-container" ref="mapContainer"></div>
+      <Footer />
     </div>
   </div>
 </template>
@@ -30,11 +31,13 @@
 import SearchFormComponent from '@/components/layout/SearchFormComponent.vue'
 import { mapState, mapActions } from 'vuex'
 import SlidingMenu from '../SlidingMenu.vue'
+import Footer from '../Footer.vue'
 
 export default {
   components: {
     SearchFormComponent,
-    SlidingMenu
+    SlidingMenu,
+    Footer
   },
   data() {
     return {

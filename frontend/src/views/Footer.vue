@@ -2,10 +2,10 @@
   <footer class="mt-12 bg-white border-t border-gray-200">
     <div class="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
       <div class="flex items-center justify-between py-3">
-        <h2 class="text-base font-semibold text-gray-800">버스미리</h2>
+        <h2 class="text-base font-semibold text-gray-800">또타자</h2>
         <button
           @click="toggleExpand"
-          class="text-gray-500 transition-colors duration-200 hover:text-orange-500"
+          class="text-gray-600 transition-colors duration-200 hover:text-orange-500"
         >
           <ChevronIcon :isExpanded="isExpanded" />
         </button>
@@ -82,7 +82,7 @@
       </div>
 
       <div class="py-3 text-xs text-center border-t border-gray-200">
-        <p class="text-gray-600">&copy; 2024 버스미리. All rights reserved.</p>
+        <p class="text-gray-600">&copy; 2024 또타자. All rights reserved.</p>
       </div>
     </div>
   </footer>
@@ -90,12 +90,10 @@
 
 <script setup>
 import { ref } from 'vue'
-import {
-  ChevronIcon,
-  FacebookIcon,
-  TwitterIcon,
-  InstagramIcon
-} from '@/utils/icons'
+import ChevronIcon from '@/assets/Icons/ChevronIcon.vue'
+import FacebookIcon from '@/assets/Icons/FacebookIcon.vue'
+import TwitterIcon from '@/assets/Icons/TwitterIcon.vue'
+import InstagramIcon from '@/assets/Icons/InstagramIcon.vue'
 
 const isExpanded = ref(false)
 
@@ -103,3 +101,12 @@ const toggleExpand = () => {
   isExpanded.value = !isExpanded.value
 }
 </script>
+
+<style scoped>
+button {
+  background: transparent; /* 배경 투명 처리 */
+  border: none; /* 기본 보더 제거 */
+  outline: none; /* 포커스 outline 제거 */
+  cursor: pointer;
+}
+</style>
