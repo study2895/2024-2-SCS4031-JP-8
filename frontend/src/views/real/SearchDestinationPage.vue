@@ -47,14 +47,19 @@
 
       <!-- 검색 결과 목록 -->
       <ul v-if="places.length > 0" class="place-list">
-        <li v-for="(place, index) in places" :key="index" class="place-item">
+        <li
+          v-for="(place, index) in places"
+          :key="index"
+          class="place-item"
+          @click="selectPlace(place)"
+        >
           <h3>{{ place.place_name }}</h3>
           <p>{{ place.address_name }}</p>
           <p>{{ place.category_name }}</p>
           <p>{{ place.phone || '정보 없음' }}</p>
-          <button @click="toggleMap(index, place)">지도</button>
+          <button @click.stop="toggleMap(index, place)">지도</button>
           <!-- 즐겨찾기 버튼 -->
-          <button @click="toggleFavorite(place)">
+          <button @click.stop="toggleFavorite(place)">
             {{ isFavorite(place) ? '★' : '☆' }}
           </button>
 
@@ -73,6 +78,7 @@
 
 <script>
 import { mapMutations } from 'vuex'
+import { ref } from 'vue'
 
 export default {
   data() {
@@ -176,7 +182,9 @@ export default {
           date: new Date().toLocaleDateString('ko-KR', {
             month: 'numeric',
             day: 'numeric'
-          })
+          }),
+          x: place.x,
+          y: place.y
         })
       } else {
         // 즐겨찾기에 있는 경우 제거

@@ -47,14 +47,20 @@
 
       <!-- 검색 결과 목록 -->
       <ul v-if="places.length > 0" class="place-list">
-        <li v-for="(place, index) in places" :key="index" class="place-item">
+        <li
+          v-for="(place, index) in places"
+          :key="index"
+          class="place-item"
+          @click="selectPlace(place)"
+        >
           <h3>{{ place.place_name }}</h3>
           <p>{{ place.address_name }}</p>
           <p>{{ place.category_name }}</p>
           <p>{{ place.phone || '정보 없음' }}</p>
-          <button @click="toggleMap(index, place)">지도</button>
+          <!-- 지도 버튼에 .stop 수식어 추가 -->
+          <button @click.stop="toggleMap(index, place)">지도</button>
           <!-- 즐겨찾기 버튼 -->
-          <button @click="toggleFavorite(place)">
+          <button @click.stop="toggleFavorite(place)">
             {{ isFavorite(place) ? '★' : '☆' }}
           </button>
 
@@ -73,6 +79,7 @@
 
 <script>
 import { ref } from 'vue'
+import { mapMutations } from 'vuex'
 
 export default {
   data() {
@@ -85,6 +92,7 @@ export default {
     }
   },
   methods: {
+    ...mapMutations('departure', ['setDeparture']),
     async searchPlaces() {
       if (!this.keyword.trim()) {
         alert('키워드를 입력해주세요!')
@@ -167,12 +175,15 @@ export default {
       )
       if (favoriteIndex === -1) {
         // 즐겨찾기에 추가
+        ///// x,y좌표와 라우터 연결부분 추가해서 정상 작동하도록 수정
         this.favorites.push({
           query: place.place_name,
           date: new Date().toLocaleDateString('ko-KR', {
             month: 'numeric',
             day: 'numeric'
-          })
+          }),
+          x: place.x,
+          y: place.y
         })
       } else {
         // 이미 즐겨찾기에 있는 경우 제거
@@ -208,6 +219,13 @@ export default {
         position: new naver.maps.LatLng(y, x),
         map: map
       })
+    },
+    selectPlace(place) {
+      this.setDeparture({
+        name: place.place_name,
+        coordinates: { x: place.x, y: place.y }
+      })
+      this.$router.push('/')
     }
   },
   mounted() {
