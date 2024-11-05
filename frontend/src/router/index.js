@@ -23,6 +23,7 @@ import BusSearchPage from '@/views/real/BusSearchPage.vue'
 import BusRouteDetailsPage from '@/views/real/BusRouteDetailsPage.vue'
 import DetailedRoutePage from '@/views/real/DetailedRoutePage.vue'
 import Gonggong from '@/views/real/gonggong.vue'
+import BusDetailInfo from '@/views/real/BusDetailInfo.vue'
 
 const routes = [
   { path: '/', component: MainPage }, // MainPage.vue
@@ -85,6 +86,11 @@ const routes = [
     path: '/geo',
     name: 'GeologicalAPITest',
     component: GeologicalAPITest
+  },
+  {
+    path: '/bus',
+    name: 'BusDetailInfo',
+    component: BusDetailInfo
   },
   {
     path: '/odi',
