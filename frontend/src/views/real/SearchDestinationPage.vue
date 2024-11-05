@@ -16,6 +16,11 @@
         <button @click="searchPlaces">검색하기</button>
       </div>
 
+      <!-- '내 위치' 버튼 -->
+      <button @click="setCurrentLocation" class="location-button">
+        내 위치
+      </button>
+
       <!-- 최근 검색 목록 -->
       <div
         v-if="recentSearches.length > 0 && !keyword.trim()"
@@ -77,8 +82,9 @@
 </template>
 
 <script>
-import { mapMutations } from 'vuex'
 import { ref } from 'vue'
+import { mapMutations } from 'vuex'
+import { useRouter } from 'vue-router'
 
 export default {
   data() {
@@ -92,35 +98,35 @@ export default {
   },
   methods: {
     ...mapMutations('destination', ['setDestination']),
-    async searchPlaces() {
+    searchPlaces() {
       if (!this.keyword.trim()) {
         alert('키워드를 입력해주세요!')
         return
       }
-
-      this.addRecentSearch(this.keyword) // 최근 검색 저장
-      try {
-        const response = await fetch(
-          `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(
-            this.keyword
-          )}`,
-          {
-            headers: {
-              Authorization: `KakaoAK ${process.env.VUE_APP_KAKAO_REST_KEY}`
-            }
+      this.addRecentSearch(this.keyword)
+      fetch(
+        `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(
+          this.keyword
+        )}`,
+        {
+          headers: {
+            Authorization: `KakaoAK ${process.env.VUE_APP_KAKAO_REST_KEY}`
           }
-        )
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
         }
-
-        const data = await response.json()
-        this.places = data.documents
-      } catch (error) {
-        console.error('검색 중 오류가 발생했습니다.', error)
-        alert('검색 중 오류가 발생했습니다. 다시 시도해주세요.')
-      }
+      )
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+          return response.json()
+        })
+        .then((data) => {
+          this.places = data.documents
+        })
+        .catch((error) => {
+          console.error('검색 중 오류가 발생했습니다.', error)
+          alert('검색 중 오류가 발생했습니다. 다시 시도해주세요.')
+        })
     },
     clearKeyword() {
       this.keyword = ''
@@ -176,7 +182,6 @@ export default {
         (fav) => fav.place_name === place.place_name
       )
       if (favoriteIndex === -1) {
-        // 즐겨찾기에 추가
         this.favorites.push({
           query: place.place_name,
           date: new Date().toLocaleDateString('ko-KR', {
@@ -187,7 +192,6 @@ export default {
           y: place.y
         })
       } else {
-        // 즐겨찾기에 있는 경우 제거
         this.favorites.splice(favoriteIndex, 1)
       }
       localStorage.setItem('favorites', JSON.stringify(this.favorites))
@@ -201,9 +205,9 @@ export default {
     },
     toggleMap(index, place) {
       if (this.mapVisibleIndex === index) {
-        this.mapVisibleIndex = null // 지도를 닫기
+        this.mapVisibleIndex = null
       } else {
-        this.mapVisibleIndex = index // 지도를 열기
+        this.mapVisibleIndex = index
         this.$nextTick(() => {
           this.showMap(index, place.x, place.y)
         })
@@ -227,6 +231,27 @@ export default {
         coordinates: { x: place.x, y: place.y }
       })
       this.$router.push('/')
+    },
+    setCurrentLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            this.setDestination({
+              name: '내 위치',
+              coordinates: {
+                x: position.coords.longitude,
+                y: position.coords.latitude
+              }
+            })
+            this.$router.push('/') // 위치 설정 후 메인 페이지로 이동
+          },
+          (error) => {
+            alert('위치를 불러오지 못했습니다.')
+          }
+        )
+      } else {
+        alert('이 브라우저는 Geolocation을 지원하지 않습니다.')
+      }
     }
   },
   mounted() {
@@ -238,6 +263,23 @@ export default {
 <style scoped>
 * {
   font-family: 'Pretendard', sans-serif;
+}
+
+.location-button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  background-color: #f0f0f0;
+  color: #444;
+  font-size: 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.location-button:hover {
+  background-color: #e5e5e5;
 }
 
 .background {
