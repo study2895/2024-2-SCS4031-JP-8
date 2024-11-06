@@ -76,7 +76,7 @@ export default {
         'https://api.odsay.com/v1/api/searchBusLane',
         {
           params: {
-            apiKey: 'x50yOL3HODnuPAvX0iFSRA',
+            apiKey: process.env.VUE_APP_ODSAY_API_KEY, // .env 파일에서 API 키 가져오기
             busNo: '1004'
           }
         }
@@ -96,7 +96,7 @@ export default {
         'https://api.odsay.com/v1/api/busLaneDetail',
         {
           params: {
-            apiKey: 'x50yOL3HODnuPAvX0iFSRA',
+            apiKey: process.env.VUE_APP_ODSAY_API_KEY, // .env 파일에서 API 키 가져오기
             busID
           }
         }
