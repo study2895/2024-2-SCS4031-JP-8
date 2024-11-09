@@ -13,13 +13,6 @@
       <h3>정류장 목록</h3>
       <div v-for="(stop, index) in busStops" :key="index" class="bus-stop">
         <p>{{ stop.stationName }}</p>
-        <span>
-          도착 예정:
-          <template v-if="stop.arrivalInfo !== '없음'">
-            {{ formatTime(stop.arrivalInfo) }}
-          </template>
-          <template v-else>없음</template>
-        </span>
         <!-- 버스 위치 정보가 있을 때 표시 -->
         <div v-if="stop.busInfo" class="bus-details">
           <img src="@/assets/bus-icon.png" alt="버스 아이콘" class="bus-icon" />
@@ -51,12 +44,6 @@ export default {
     }
   },
   methods: {
-    formatTime(seconds) {
-      const h = Math.floor(seconds / 3600)
-      const m = Math.floor((seconds % 3600) / 60)
-      const s = seconds % 60
-      return `${h > 0 ? h + '시간 ' : ''}${m > 0 ? m + '분 ' : ''}${s}초`
-    },
     getPlateType(type) {
       const types = [
         '정보없음',
@@ -108,44 +95,10 @@ export default {
       this.busStops = stops.map((stop) => ({
         stationName: stop.stationName,
         stationSeq: stop.idx, // 정류장 순번 저장
-        arrivalInfo: '없음',
         busInfo: null // 초기값
       }))
 
-      // Step 3: 실시간 도착 정보 추가
-      await Promise.all(
-        this.busStops.map(async (stop) => {
-          try {
-            console.log(
-              `실시간 도착 정보 조회 API 호출 시작 - 정류장 ID: ${stop.stationSeq}`
-            )
-            const realTimeResponse = await axios.get(
-              'https://api.odsay.com/v1/api/realtimeStation',
-              {
-                params: {
-                  apiKey: process.env.VUE_APP_BUS_SERVICE_KEY_ENCODED, // 환경 변수로 변경
-                  stationID: stop.stationSeq
-                }
-              }
-            )
-            console.log(
-              '실시간 도착 정보 조회 API 결과:',
-              realTimeResponse.data
-            )
-            stop.arrivalInfo =
-              realTimeResponse.data.result.real?.[0]?.arrival1?.arrivalSec ||
-              '없음'
-          } catch (error) {
-            console.error(
-              `실시간 도착 정보 조회 실패 - 정류장 ID: ${stop.stationSeq}`,
-              error
-            )
-            stop.arrivalInfo = '없음'
-          }
-        })
-      )
-
-      // Step 4: 경기도 버스 위치 정보 API - 정류장 순번 맞춰 버스 정보 추가
+      // Step 3: 경기도 버스 위치 정보 API - 정류장 순번 맞춰 버스 정보 추가
       console.log('경기도 버스 위치 정보 API 호출 시작')
       const gyeonggiBusResponse = await axios.get(
         'http://apis.data.go.kr/6410000/buslocationservice/getBusLocationList',
