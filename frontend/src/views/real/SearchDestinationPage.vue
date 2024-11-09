@@ -21,6 +21,22 @@
         내 위치
       </button>
 
+      <!-- 장소명/정류장 선택 버튼 -->
+      <div class="search-type-toggle">
+        <button
+          :class="{ active: searchType === 'place' }"
+          @click="setSearchType('place')"
+        >
+          장소명
+        </button>
+        <button
+          :class="{ active: searchType === 'station' }"
+          @click="setSearchType('station')"
+        >
+          정류장
+        </button>
+      </div>
+
       <!-- 최근 검색 목록 -->
       <div
         v-if="recentSearches.length > 0 && !keyword.trim()"
@@ -51,9 +67,9 @@
       </div>
 
       <!-- 검색 결과 목록 -->
-      <ul v-if="places.length > 0" class="place-list">
+      <ul v-if="filteredPlaces.length > 0" class="place-list">
         <li
-          v-for="(place, index) in places"
+          v-for="(place, index) in filteredPlaces"
           :key="index"
           class="place-item"
           @click="selectPlace(place)"
@@ -63,7 +79,6 @@
           <p>{{ place.category_name }}</p>
           <p>{{ place.phone || '정보 없음' }}</p>
           <button @click.stop="toggleMap(index, place)">지도</button>
-          <!-- 즐겨찾기 버튼 -->
           <button @click.stop="toggleFavorite(place)">
             {{ isFavorite(place) ? '★' : '☆' }}
           </button>
@@ -91,46 +106,100 @@ export default {
     return {
       keyword: '',
       places: [],
+      stations: [], // 오디세이 API 결과용
+      searchType: 'place', // 기본값을 'place'로 설정
       recentSearches: [],
-      favorites: [], // 즐겨찾기 목록
-      mapVisibleIndex: null // 현재 표시된 지도 인덱스
+      favorites: [],
+      mapVisibleIndex: null
+    }
+  },
+  computed: {
+    filteredPlaces() {
+      return this.searchType === 'place' ? this.places : this.stations
     }
   },
   methods: {
     ...mapMutations('destination', ['setDestination']),
+    setSearchType(type) {
+      this.searchType = type
+      console.log('searchType이 변경되었습니다:', this.searchType)
+      this.searchPlaces() // searchType 변경 후 자동으로 검색 실행
+    },
     searchPlaces() {
       if (!this.keyword.trim()) {
         alert('키워드를 입력해주세요!')
         return
       }
+
       this.addRecentSearch(this.keyword)
-      fetch(
-        `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(
-          this.keyword
-        )}`,
-        {
-          headers: {
-            Authorization: `KakaoAK ${process.env.VUE_APP_KAKAO_REST_KEY}`
+      console.log('현재 searchType:', this.searchType)
+
+      if (this.searchType === 'place') {
+        console.log('카카오 API 호출 시작')
+        fetch(
+          `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(
+            this.keyword
+          )}`,
+          {
+            headers: {
+              Authorization: `KakaoAK ${process.env.VUE_APP_KAKAO_REST_KEY}`
+            }
           }
-        }
-      )
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`)
-          }
-          return response.json()
-        })
-        .then((data) => {
-          this.places = data.documents
-        })
-        .catch((error) => {
-          console.error('검색 중 오류가 발생했습니다.', error)
-          alert('검색 중 오류가 발생했습니다. 다시 시도해주세요.')
-        })
+        )
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`)
+            }
+            return response.json()
+          })
+          .then((data) => {
+            this.places = data.documents
+            this.stations = [] // 오디세이 결과 초기화
+          })
+          .catch((error) => {
+            console.error('카카오 API 검색 중 오류가 발생했습니다.', error)
+            alert('카카오 API 검색 중 오류가 발생했습니다. 다시 시도해주세요.')
+          })
+      } else if (this.searchType === 'station') {
+        console.log('오디세이 API 호출 시작')
+        fetch(
+          `https://api.odsay.com/v1/api/searchStation?stationName=${encodeURIComponent(
+            this.keyword
+          )}&apiKey=${process.env.VUE_APP_ODSAY_API_KEY}`
+        )
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`ODsay API error! status: ${response.status}`)
+            }
+            return response.json()
+          })
+          .then((odsayData) => {
+            console.log('ODsay API 응답:', odsayData)
+
+            if (odsayData.result && Array.isArray(odsayData.result.station)) {
+              this.stations = odsayData.result.station.map((station) => ({
+                place_name: station.stationName,
+                address_name: `${station.do} ${station.gu} ${station.dong}`,
+                category_name: '대중교통 정류장',
+                phone: '정보 없음',
+                x: station.x,
+                y: station.y
+              }))
+              this.places = [] // 카카오 결과 초기화
+            } else {
+              console.warn('ODsay API 응답에서 station 데이터가 없습니다.')
+            }
+          })
+          .catch((error) => {
+            console.error('ODsay API 검색 중 오류가 발생했습니다.', error)
+            alert('ODsay API 검색 중 오류가 발생했습니다. 다시 시도해주세요.')
+          })
+      }
     },
     clearKeyword() {
       this.keyword = ''
       this.places = []
+      this.stations = []
     },
     addRecentSearch(query) {
       const date = new Date().toLocaleDateString('ko-KR', {
@@ -263,6 +332,28 @@ export default {
 <style scoped>
 * {
   font-family: 'Pretendard', sans-serif;
+}
+
+/* 버튼 스타일 */
+.search-type-toggle {
+  display: flex;
+  justify-content: center;
+  margin: 15px 0;
+}
+
+.search-type-toggle button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  background-color: #f0f0f0;
+  font-size: 14px;
+  color: #444;
+}
+
+.search-type-toggle .active {
+  background-color: #e5c7c7;
+  color: white;
 }
 
 .location-button {
