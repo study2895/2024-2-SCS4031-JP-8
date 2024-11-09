@@ -24,6 +24,7 @@ import BusRouteDetailsPage from '@/views/real/BusRouteDetailsPage.vue'
 import DetailedRoutePage from '@/views/real/DetailedRoutePage.vue'
 import Gonggong from '@/views/real/gonggong.vue'
 import BusDetailInfo from '@/views/real/BusDetailInfo.vue'
+import BusDetailLocation from '@/views/real/BusDetailLocation.vue'
 
 const routes = [
   { path: '/', component: MainPage }, // MainPage.vue
@@ -101,6 +102,11 @@ const routes = [
     path: '/gong',
     name: 'gong',
     component: gonggong
+  },
+  {
+    path: '/buslocation',
+    name: 'buslocation',
+    component: BusDetailLocation
   }
 
   // {
