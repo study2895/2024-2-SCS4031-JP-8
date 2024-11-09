@@ -79,7 +79,7 @@ export default {
         {
           params: {
             apiKey: process.env.VUE_APP_ODSAY_API_KEY,
-            busNo: '5000A'
+            busNo: '5000B'
           }
         }
       )
