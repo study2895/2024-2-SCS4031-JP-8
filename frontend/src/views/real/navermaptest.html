@@ -112,14 +112,14 @@
               console.log('Line Array:', lineArray) // 각 라인 배열 확인 로그
               const color =
                 lane.type === 1
-                  ? '#003499'
+                  ? '#3a54fc'
                   : lane.type === 2
-                  ? '#37b42d'
+                  ? '#42c700'
                   : '#000000'
               new naver.maps.Polyline({
                 map: map,
                 path: lineArray,
-                strokeWeight: 3,
+                strokeWeight: 7,
                 strokeColor: color
               })
             })
