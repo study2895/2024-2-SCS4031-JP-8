@@ -35,6 +35,7 @@
         alt="Landing Background"
         class="landing-image"
       />
+
       <Footer />
     </div>
   </div>
@@ -268,25 +269,5 @@ h1 {
   margin-top: 20px;
   border-radius: 8px;
   overflow: hidden;
-}
-.background {
-  position: relative;
-  width: 100%;
-  min-height: 100vh; /* 화면 높이에 맞추어 설정 */
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto; /* 스크롤 가능하도록 설정 */
-}
-
-.mobile-container {
-  flex: 1;
-  padding-bottom: 20px;
-}
-
-.landing-image {
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-  margin-top: 20px;
 }
 </style>
