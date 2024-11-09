@@ -97,7 +97,8 @@
           console.log('drawNaverMarker 위치:', x, y) // 마커 위치 확인 로그
           new naver.maps.Marker({
             position: new naver.maps.LatLng(y, x),
-            map: map
+            map: map,
+            icon: '../../assets/Icons/map-marker-icon.png' // 커스텀 마커 아이콘 경로
           })
         }
 
