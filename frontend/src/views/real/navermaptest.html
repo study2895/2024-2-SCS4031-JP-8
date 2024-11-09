@@ -55,7 +55,7 @@
               if (
                 result.result &&
                 result.result.path &&
-                result.result.path[0]
+                result.result.path[0] //첫번째 경로만 지도에 표시 - 나중에 수정
               ) {
                 console.log('Map Object:', result.result.path[0].info.mapObj) // mapObj 확인 로그
                 callMapObjApiAJAX(result.result.path[0].info.mapObj)
