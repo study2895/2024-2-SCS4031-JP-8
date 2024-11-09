@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>길찾기 결과 지도에 표출하기</title>
   </head>
   <body>
@@ -13,17 +14,24 @@
     ></script>
     <script>
       window.onload = function () {
-        var mapOptions = {
-          center: new naver.maps.LatLng(37.3595704, 127.105399),
-          zoom: 10
-        }
-
-        var map = new naver.maps.Map('map', mapOptions)
-
         var sx = 126.93737555322481
         var sy = 37.55525165729346
         var ex = 126.88265238619182
         var ey = 37.481440035175375
+
+        // 출발지와 도착지의 중간 지점을 중심으로 지도 초기화
+        var centerPoint = new naver.maps.LatLng((sy + ey) / 2, (sx + ex) / 2)
+
+        var mapOptions = {
+          center: centerPoint,
+          zoom: 10,
+          zoomControl: true,
+          zoomControlOptions: {
+            position: naver.maps.Position.TOP_RIGHT
+          }
+        }
+
+        var map = new naver.maps.Map('map', mapOptions)
 
         function searchPubTransPathAJAX() {
           var xhr = new XMLHttpRequest()
@@ -74,6 +82,13 @@
               drawNaverMarker(sx, sy) // 출발지 마커 표시
               drawNaverMarker(ex, ey) // 도착지 마커 표시
               drawNaverPolyLine(data) // 노선그래픽데이터 지도위 표시
+
+              // 지도에 경로가 전체 보이도록 영역을 조정
+              var bounds = new naver.maps.LatLngBounds(
+                new naver.maps.LatLng(sy, sx),
+                new naver.maps.LatLng(ey, ex)
+              )
+              map.fitBounds(bounds)
             }
           }
         }
