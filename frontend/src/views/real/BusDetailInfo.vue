@@ -14,18 +14,26 @@
       <div v-for="(stop, index) in busStops" :key="index" class="bus-stop">
         <p>{{ stop.stationName }}</p>
         <!-- 버스 위치 정보가 있을 때 표시 -->
-        <div v-if="stop.busInfo" class="bus-details">
+        <div v-if="stop.arrivalInfo" class="arrival-details">
           <img src="@/assets/bus-icon.png" alt="버스 아이콘" class="bus-icon" />
-          <p>차량번호: {{ stop.busInfo.plateNo }}</p>
-          <p>차종: {{ getPlateType(stop.busInfo.plateType) }}</p>
           <p>
-            빈자리:
-            {{
-              stop.busInfo.remainSeatCnt >= 0
-                ? stop.busInfo.remainSeatCnt
-                : '정보없음'
-            }}
+            첫번째 차량 번호: {{ stop.arrivalInfo.plateNo1 }} ({{
+              stop.arrivalInfo.locationNo1
+            }}번째 전)
           </p>
+          <p>
+            첫번째 차량 도착 예정 시간: {{ stop.arrivalInfo.predictTime1 }}분 후
+          </p>
+          <p>첫번째 차량 빈자리 수: {{ stop.arrivalInfo.remainSeatCnt1 }}</p>
+          <p>
+            두번째 차량 번호: {{ stop.arrivalInfo.plateNo2 }} ({{
+              stop.arrivalInfo.locationNo2
+            }}번째 전)
+          </p>
+          <p>
+            두번째 차량 도착 예정 시간: {{ stop.arrivalInfo.predictTime2 }}분 후
+          </p>
+          <p>두번째 차량 빈자리 수: {{ stop.arrivalInfo.remainSeatCnt2 }}</p>
         </div>
       </div>
     </section>
@@ -44,6 +52,65 @@ export default {
     }
   },
   methods: {
+    async fetchArrivalInfo(stop) {
+      try {
+        console.log(`정류소 ${stop.stationName}에 대한 도착 정보 조회 중...`)
+        const arrivalResponse = await axios.get(
+          'http://apis.data.go.kr/6410000/busarrivalservice/getBusArrivalItem',
+          {
+            params: {
+              serviceKey:
+                'EVTsGjdsoUlBtJTpdh/itgFJXzeeNK/BP4lN8my+i9AaoLGNln1kqRcyVP7CVRY8GsiXkX+OMl2HviEvq6hlfQ==',
+              routeId: this.localBusID,
+              stationId: stop.localStationID
+            }
+          }
+        )
+        const parser = new DOMParser()
+        const xmlDoc = parser.parseFromString(arrivalResponse.data, 'text/xml')
+
+        const resultCode =
+          xmlDoc.getElementsByTagName('resultCode')[0].textContent
+        if (resultCode === '0') {
+          const busArrivalItem =
+            xmlDoc.getElementsByTagName('busArrivalItem')[0]
+          stop.arrivalInfo = {
+            locationNo1:
+              busArrivalItem.getElementsByTagName('locationNo1')[0].textContent,
+            locationNo2:
+              busArrivalItem.getElementsByTagName('locationNo2')[0].textContent,
+            plateNo1:
+              busArrivalItem.getElementsByTagName('plateNo1')[0].textContent,
+            plateNo2:
+              busArrivalItem.getElementsByTagName('plateNo2')[0].textContent,
+            predictTime1:
+              busArrivalItem.getElementsByTagName('predictTime1')[0]
+                .textContent,
+            predictTime2:
+              busArrivalItem.getElementsByTagName('predictTime2')[0]
+                .textContent,
+            remainSeatCnt1:
+              busArrivalItem.getElementsByTagName('remainSeatCnt1')[0]
+                .textContent,
+            remainSeatCnt2:
+              busArrivalItem.getElementsByTagName('remainSeatCnt2')[0]
+                .textContent
+          }
+          console.log(
+            `정류소 ${stop.stationName}에 도착 정보 추가됨:`,
+            stop.arrivalInfo
+          )
+        } else {
+          console.log(`정류소 ${stop.stationName}에 도착 정보가 없습니다.`)
+          stop.arrivalInfo = null
+        }
+      } catch (error) {
+        console.error(
+          `도착 정보 조회 중 오류 발생 (${stop.stationName}):`,
+          error
+        )
+      }
+    },
     getPlateType(type) {
       const types = [
         '정보없음',
@@ -57,84 +124,47 @@ export default {
   },
   async created() {
     try {
-      // Step 1: Bus Route Search API - 5000a 검색
       console.log('버스 노선 검색 API 호출 시작')
       const routeResponse = await axios.get(
         'https://api.odsay.com/v1/api/searchBusLane',
         {
           params: {
-            apiKey: process.env.VUE_APP_ODSAY_API_KEY, // .env 파일에서 API 키 가져오기
-            busNo: '1004'
+            apiKey: process.env.VUE_APP_ODSAY_API_KEY,
+            busNo: '5000A'
           }
         }
       )
       console.log('버스 노선 검색 API 결과:', routeResponse.data)
 
       const yonginBus = routeResponse.data.result.lane.find(
-        (lane) => lane.busCityName === '김포'
+        (lane) => lane.busCityName === '용인'
       )
       this.localBusID = yonginBus.localBusID
       const { busID } = yonginBus
       console.log('선택된 용인 버스:', yonginBus)
 
-      // Step 2: Bus Route Information API - 버스 상세정보 조회
       console.log('버스 상세정보 조회 API 호출 시작')
       const infoResponse = await axios.get(
         'https://api.odsay.com/v1/api/busLaneDetail',
         {
           params: {
-            apiKey: process.env.VUE_APP_ODSAY_API_KEY, // .env 파일에서 API 키 가져오기
+            apiKey: process.env.VUE_APP_ODSAY_API_KEY,
             busID
           }
         }
       )
       console.log('버스 상세정보 조회 API 결과:', infoResponse.data)
-      const stops = infoResponse.data.result.station
-      console.log('정류장 목록:', stops)
 
-      this.busStops = stops.map((stop) => ({
+      this.busStops = infoResponse.data.result.station.map((stop) => ({
         stationName: stop.stationName,
-        stationSeq: stop.idx, // 정류장 순번 저장
-        busInfo: null // 초기값
+        stationSeq: stop.idx,
+        localStationID: stop.localStationID,
+        arrivalInfo: null
       }))
 
-      // Step 3: 경기도 버스 위치 정보 API - 정류장 순번 맞춰 버스 정보 추가
-      console.log('경기도 버스 위치 정보 API 호출 시작')
-      const gyeonggiBusResponse = await axios.get(
-        'http://apis.data.go.kr/6410000/buslocationservice/getBusLocationList',
-        {
-          params: {
-            serviceKey:
-              'EVTsGjdsoUlBtJTpdh%2FitgFJXzeeNK%2FBP4lN8my%2Bi9AaoLGNln1kqRcyVP7CVRY8GsiXkX%2BOMl2HviEvq6hlfQ%3D%3D',
-            routeId: this.localBusID
-          }
-        }
-      )
-      console.log('경기도 버스 위치 정보 API 결과:', gyeonggiBusResponse.data)
-
-      if (gyeonggiBusResponse.data.response?.msgBody?.busLocationList) {
-        const busLocations =
-          gyeonggiBusResponse.data.response.msgBody.busLocationList
-        console.log('버스 위치 목록:', busLocations)
-
-        busLocations.forEach((bus) => {
-          const matchedStop = this.busStops.find(
-            (stop) => stop.stationSeq === parseInt(bus.stationSeq)
-          )
-          if (matchedStop) {
-            matchedStop.busInfo = {
-              plateNo: bus.plateNo,
-              plateType: bus.plateType,
-              remainSeatCnt: bus.remainSeatCnt
-            }
-            console.log(
-              `정류장 ${matchedStop.stationName}에 버스 위치 정보 추가됨:`,
-              matchedStop.busInfo
-            )
-          }
-        })
-      } else {
-        console.log('지원하지 않는 노선입니다.')
+      console.log('각 정류소에 대한 도착 정보 조회 시작')
+      for (const stop of this.busStops) {
+        await this.fetchArrivalInfo(stop)
       }
     } catch (error) {
       console.error('API 호출 중 오류 발생:', error)
@@ -162,7 +192,7 @@ export default {
   height: 20px;
   margin-left: 5px;
 }
-.bus-details {
+.arrival-details {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
