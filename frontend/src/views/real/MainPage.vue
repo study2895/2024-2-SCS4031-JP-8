@@ -166,7 +166,8 @@ export default {
               this.location.latitude,
               this.location.longitude
             ),
-            map: map
+            map: map,
+            icon: '../../assets/Icons/Group 24.png' // 커스텀 마커 아이콘 경로
           })
         } else {
           console.error('지도 컨테이너를 찾을 수 없습니다.')
