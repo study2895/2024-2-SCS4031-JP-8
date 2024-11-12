@@ -22,6 +22,7 @@
       </button>
 
       <!-- 최근 검색 목록 -->
+      <!-- 최근 검색 목록에 "(장소)" 표시 추가 -->
       <div
         v-if="recentSearches.length > 0 && !keyword.trim()"
         class="recent-searches"
@@ -31,6 +32,7 @@
           <li v-for="(search, index) in recentSearches" :key="index">
             <span @click="applyRecentSearch(search.query)">
               {{ search.query }} - {{ search.date }}
+              {{ search.type === 'place' ? '(장소)' : '' }}
             </span>
             <button @click="removeRecentSearch(index)">x</button>
           </li>
@@ -200,30 +202,28 @@ export default {
       this.keyword = ''
       this.places = []
     },
-    addRecentSearch(query) {
+    addRecentSearch(query, type = 'search') {
       const date = new Date().toLocaleDateString('ko-KR', {
         month: 'numeric',
         day: 'numeric'
       })
+      const newSearch = { query, date, type }
+
       const existingIndex = this.recentSearches.findIndex(
         (item) => item.query === query
       )
       if (existingIndex !== -1) {
-        this.recentSearches[existingIndex].date = date
-        this.recentSearches.unshift(
-          this.recentSearches.splice(existingIndex, 1)[0]
-        )
-      } else {
-        if (this.recentSearches.length >= 3) {
-          this.recentSearches.pop()
-        }
-        this.recentSearches.unshift({ query, date })
+        this.recentSearches.splice(existingIndex, 1)
+      } else if (this.recentSearches.length >= 3) {
+        this.recentSearches.pop()
       }
+      this.recentSearches.unshift(newSearch)
       localStorage.setItem(
         'recentSearches',
         JSON.stringify(this.recentSearches)
       )
     },
+
     loadRecentSearches() {
       const storedSearches = localStorage.getItem('recentSearches')
       if (storedSearches) {
@@ -294,6 +294,8 @@ export default {
       })
     },
     selectPlace(place) {
+      // 선택한 장소를 최근 검색에 "(장소)"로 표시
+      this.addRecentSearch(place.place_name, 'place')
       this.setDeparture({
         name: place.place_name,
         coordinates: { x: place.x, y: place.y }
