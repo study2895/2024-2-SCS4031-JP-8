@@ -6,6 +6,7 @@
       }})
     </h1>
     <div
+      style="margin-bottom: 20px"
       v-for="station in stationData"
       :key="station.stationID"
       class="station-info"
@@ -19,7 +20,7 @@
         <span>빈자리 수: {{ station.realtimeData.remainSeatCnt1 }}</span>
       </p>
       <p v-else>
-        <strong>예측 여석 정보:</strong> {{ station.predictedSeats }}
+        <strong>예측 재차 인원:</strong> {{ station.predictedSeats }}
       </p>
     </div>
   </div>
