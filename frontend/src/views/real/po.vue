@@ -27,8 +27,8 @@
 
 <script>
 import axios from 'axios'
-import csvData from '@/path/to/your/csvFile' // CSV 파일 경로 설정
-import { processStationData } from '@/path/to/your/externalLogic' // 외부 로직 파일 import
+import Papa from 'papaparse' // papaparse를 import
+import { processStationData } from './externalLogic.js' // 외부 로직 파일 import
 
 // 버스 노선 정보 사전 데이터
 const busRouteData = {
@@ -62,6 +62,11 @@ const busRouteData = {
   }
 }
 
+// 정류장명에서 문장 부호와 공백을 제거하는 함수
+function sanitizeStationName(stationName) {
+  return stationName.replace(/[.,\s]/g, '')
+}
+
 export default {
   data() {
     return {
@@ -69,21 +74,39 @@ export default {
       selectedBusRoute: '5000B', // 예시로 설정된 버스 노선
       selectedHour: 18, // 임의로 설정된 시간
       selectedMinute: 25, // 임의로 설정된 분
-      selectedDirection: 'up' // 상행(up) 또는 하행(down) 선택
+      selectedDirection: 'up', // 상행(up) 또는 하행(down) 선택
+      csvData: [] // CSV 데이터를 저장할 배열
     }
   },
   methods: {
+    async loadCsvData() {
+      console.log('[INFO] Loading CSV data...')
+      return new Promise((resolve, reject) => {
+        Papa.parse('/csv/sarima_predictions_all_stations_weekday.csv', {
+          download: true,
+          header: true,
+          complete: (result) => {
+            this.csvData = result.data
+            console.log('[INFO] CSV 데이터가 로드되었습니다:', this.csvData)
+            resolve()
+          },
+          error: (error) => {
+            console.error('[ERROR] CSV 파일을 로드하는 중 오류 발생:', error)
+            reject(error)
+          }
+        })
+      })
+    },
     async fetchBusRouteDetails() {
-      const busID = busRouteData[this.selectedBusRoute].busID // 사전 데이터에서 busID 가져오기
+      const busID = busRouteData[this.selectedBusRoute].busID
       console.log(`[INFO] Fetching bus route details for busID: ${busID}`)
 
       try {
-        // Odyssey API를 통해 정류장 데이터를 가져옴
         const response = await axios.get(
           `https://api.odsay.com/v1/api/busLaneDetail`,
           {
             params: {
-              apiKey: 'YOUR_API_KEY', // 발급받은 API 키 입력
+              apiKey: process.env.VUE_APP_ODSAY_API_KEY,
               busID: busID,
               lang: 0,
               output: 'json'
@@ -96,27 +119,28 @@ export default {
           response.data
         )
 
-        this.stationData = response.data.result.station.map((station) => {
-          const predictedSeats = this.getCsvSeatPrediction(
-            station.stationName,
-            this.selectedHour
-          )
-          console.log(
-            `[INFO] Station: ${station.stationName}, ID: ${station.stationID}, idx: ${station.idx}, Predicted Seats: ${predictedSeats}`
-          )
+        this.stationData = response.data.result.station
+          .filter((station) => station.nonstopStation === 0)
+          .map((station) => {
+            const predictedSeats = this.getCsvSeatPrediction(
+              station.stationName,
+              this.selectedHour
+            )
+            console.log(
+              `[INFO] Station: ${station.stationName}, ID: ${station.stationID}, idx: ${station.idx}, Predicted Seats: ${predictedSeats}`
+            )
 
-          return {
-            stationID: station.stationID,
-            idx: station.idx,
-            stationName: station.stationName,
-            realtimeData: null,
-            predictedSeats
-          }
-        })
+            return {
+              stationID: station.stationID,
+              idx: station.idx,
+              stationName: station.stationName,
+              realtimeData: null,
+              predictedSeats
+            }
+          })
 
         await this.fetchRealTimeData()
 
-        // stationData를 외부 로직으로 넘김
         this.stationData.forEach((station) => {
           console.log(`[INFO] Sending station data to external logic:`, station)
           processStationData(
@@ -129,9 +153,8 @@ export default {
         console.error('[ERROR] Failed to fetch bus route details:', error)
       }
     },
-
     async fetchRealTimeData() {
-      const routeId = busRouteData[this.selectedBusRoute].routeId // 사전 데이터에서 routeId 가져오기
+      const routeId = busRouteData[this.selectedBusRoute].routeId
       const now = new Date()
       console.log(
         `[INFO] Checking real-time data availability at ${now.getHours()}:${now.getMinutes()}`
@@ -149,7 +172,8 @@ export default {
               'http://apis.data.go.kr/6410000/busarrivalservice/getBusArrivalItem',
               {
                 params: {
-                  serviceKey: 'YOUR_SERVICE_KEY', // 발급받은 공공데이터포털 서비스 키
+                  serviceKey:
+                    'EVTsGjdsoUlBtJTpdh/itgFJXzeeNK/BP4lN8my+i9AaoLGNln1kqRcyVP7CVRY8GsiXkX+OMl2HviEvq6hlfQ==',
                   stationId: station.stationID,
                   routeId: routeId
                 }
@@ -162,7 +186,6 @@ export default {
               realTimeData
             )
 
-            // 첫 번째 차량의 도착 정보와 빈자리 수 저장
             station.realtimeData = {
               predictTime1: realTimeData.predictTime1,
               remainSeatCnt1: realTimeData.remainSeatCnt1
@@ -182,37 +205,37 @@ export default {
     },
 
     getCsvSeatPrediction(stationName, hour) {
-      // CSV 파일에서 예측 데이터를 가져오는 함수 (상행/하행에 따라 다른 구간 선택)
-      const stationRows = csvData.filter(
-        (row) => row['정류장명'] === stationName
+      const hourKey = `${hour}시` // 시간에 해당하는 컬럼명 생성
+      const stationRows = this.csvData.filter(
+        (row) =>
+          row['정류장명'].replace(/\s+/g, '').replace(/[.()]/g, '') ===
+          stationName.replace(/\s+/g, '').replace(/[.()]/g, '')
       )
 
-      // 상행/하행에 따라 43열부터 끝까지(상행) 또는 1열부터 42열까지(하행) 구분
-      const targetRows =
-        this.selectedDirection === 'up'
-          ? stationRows.slice(42) // 상행 구간 (43열부터)
-          : stationRows.slice(0, 42) // 하행 구간 (1열부터 42열까지)
+      console.log('[DEBUG] Station Rows for', stationName, ':', stationRows) // 불러온 CSV 데이터 확인
 
+      if (stationRows.length === 0) {
+        console.warn(`[WARN] No data found for station: ${stationName}`)
+        return '데이터 없음'
+      }
+
+      // 지정된 시간대 데이터를 추출
+      const targetRows = stationRows.map((row) => row[hourKey])
+
+      console.log('[DEBUG] Target Rows by Hour:', targetRows) // 시간대별로 추출된 데이터 확인
+
+      const seatPrediction =
+        targetRows[0] !== undefined ? targetRows[0] : '데이터 없음'
       console.log(
-        `[INFO] CSV data loaded for station ${stationName}. Direction: ${this.selectedDirection}, Rows Count: ${targetRows.length}`
+        `[INFO] Seat Prediction for ${stationName} at ${hour}시:`,
+        seatPrediction
       )
-
-      // 순번(idx 역할) 계산하여 외부 로직에 넘길 데이터로 저장
-      return targetRows.map((row, index) => {
-        const seatPrediction = row[`${hour}시`] || '데이터 없음'
-        console.log(
-          `[INFO] CSV Row ${index + 1}, Seat Prediction: ${seatPrediction}`
-        )
-
-        return {
-          seatPrediction,
-          idx: index + 1 // CSV 파일의 순번 (0부터 시작하므로 +1)
-        }
-      })
+      return seatPrediction
     }
   },
   async mounted() {
     console.log(`[INFO] Component mounted. Fetching bus route details...`)
+    await this.loadCsvData()
     await this.fetchBusRouteDetails()
   }
 }
