@@ -30,6 +30,11 @@ import axios from 'axios'
 import Papa from 'papaparse' // papaparse를 import
 import { processStationData } from './externalLogic.js' // 외부 로직 파일 import
 
+////////////////////
+// 날짜 받아와서 요일로 바꾸고 요일에 따른 평일, 토요일, 일요일 구분해야하고
+// 순번 정리
+// 상행 하행 정리
+
 // 버스 노선 정보 사전 데이터
 const busRouteData = {
   '5000A': {
