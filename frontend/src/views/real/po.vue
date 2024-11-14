@@ -83,7 +83,7 @@ export default {
           `https://api.odsay.com/v1/api/busLaneDetail`,
           {
             params: {
-              apiKey: 'YOUR_API_KEY', // 발급받은 API 키 입력
+              apiKey: process.env.VUE_APP_ODSAY_API_KEY, // 발급받은 API 키 입력
               busID: busID,
               lang: 0,
               output: 'json'
@@ -149,7 +149,7 @@ export default {
               'http://apis.data.go.kr/6410000/busarrivalservice/getBusArrivalItem',
               {
                 params: {
-                  serviceKey: 'YOUR_SERVICE_KEY', // 발급받은 공공데이터포털 서비스 키
+                  serviceKey: process.env.VUE_APP_ODSAY_API_KEY, // 발급받은 공공데이터포털 서비스 키
                   stationId: station.stationID,
                   routeId: routeId
                 }
