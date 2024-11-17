@@ -6,6 +6,7 @@
       }})
     </h1>
     <div
+      style="margin-bottom: 20px"
       v-for="station in stationData"
       :key="station.stationID"
       class="station-info"
@@ -19,7 +20,7 @@
         <span>빈자리 수: {{ station.realtimeData.remainSeatCnt1 }}</span>
       </p>
       <p v-else>
-        <strong>예측 여석 정보:</strong> {{ station.predictedSeats }}
+        <strong>예측 재차 인원:</strong> {{ station.predictedSeats }}
       </p>
     </div>
   </div>
@@ -29,6 +30,14 @@
 import axios from 'axios'
 import Papa from 'papaparse' // papaparse를 import
 import { processStationData } from './externalLogic.js' // 외부 로직 파일 import
+
+////////////////////
+// 날짜 받아와서 요일로 바꾸고 요일에 따른 평일, 토요일, 일요일 구분해야하고
+// 순번 정리(오디세이에서는 0부터 시작)
+// 상행 하행 정리
+// 넘겨받은 확률-정류장 정보를 유지해야함
+// 출력에 오류는 아닌데 상행+하행 출력돼서 그냥 같은이름이면 같게 출력되는듯 받아오는 정보는 같은듯
+// 버스운행시간로직작성
 
 // 버스 노선 정보 사전 데이터
 const busRouteData = {
@@ -72,7 +81,7 @@ export default {
     return {
       stationData: [], // 정류장 정보를 저장할 배열
       selectedBusRoute: '5000B', // 예시로 설정된 버스 노선
-      selectedHour: 18, // 임의로 설정된 시간
+      selectedHour: 17, // 임의로 설정된 시간
       selectedMinute: 25, // 임의로 설정된 분
       selectedDirection: 'up', // 상행(up) 또는 하행(down) 선택
       csvData: [] // CSV 데이터를 저장할 배열
