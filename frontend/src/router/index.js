@@ -25,6 +25,7 @@ import DetailedRoutePage from '@/views/real/DetailedRoutePage.vue'
 import Gonggong from '@/views/real/gonggong.vue'
 import BusDetailInfo from '@/views/real/BusDetailInfo.vue'
 import BusDetailLocation from '@/views/real/BusDetailLocation.vue'
+import po from '@/views/real/po.vue'
 
 const routes = [
   { path: '/', component: MainPage }, // MainPage.vue
@@ -55,9 +56,9 @@ const routes = [
     component: RouteSearchResultView
   },
   {
-    path: '/odisay',
-    name: 'odisayAPITestView',
-    component: OdisayAPITestView
+    path: '/po',
+    name: 'po',
+    component: po
   },
   // {
   //   path: '/',
@@ -102,6 +103,11 @@ const routes = [
     path: '/gong',
     name: 'gong',
     component: gonggong
+  },
+  {
+    path: '/buslocation',
+    name: 'buslocation',
+    component: BusDetailLocation
   },
   {
     path: '/buslocation',
