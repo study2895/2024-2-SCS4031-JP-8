@@ -25,7 +25,7 @@ import DetailedRoutePage from '@/views/real/DetailedRoutePage.vue'
 import Gonggong from '@/views/real/gonggong.vue'
 import BusDetailInfo from '@/views/real/BusDetailInfo.vue'
 import BusDetailLocation from '@/views/real/BusDetailLocation.vue'
-import po from '@/views/real/po.vue'
+import FinalPage from '@/views/real/FinalPage.vue'
 
 const routes = [
   { path: '/', component: MainPage }, // MainPage.vue
@@ -56,9 +56,9 @@ const routes = [
     component: RouteSearchResultView
   },
   {
-    path: '/po',
-    name: 'po',
-    component: po
+    path: '/final',
+    name: 'FinalPage',
+    component: FinalPage
   },
   // {
   //   path: '/',
