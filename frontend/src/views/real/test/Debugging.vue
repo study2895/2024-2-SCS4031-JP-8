@@ -3,11 +3,25 @@
     <h1>버스 승차 확률 테스트</h1>
     <div>
       <label for="route-select">버스 노선 선택:</label>
-      <select v-model="selectedRoute" id="route-select">
+      <select
+        v-model="selectedRoute"
+        id="route-select"
+        @change="setTargetStation"
+      >
         <option value="5000A">5000A</option>
         <option value="5000B">5000B</option>
-        <option value="1112">1112</option>
         <option value="6001">6001</option>
+        <option value="1112">1112</option>
+        <option value="M7731">M7731</option>
+      </select>
+      <label for="direction-select">방향 선택:</label>
+      <select
+        v-model="selectedDirection"
+        id="direction-select"
+        @change="setTargetStation"
+      >
+        <option value="up">상행</option>
+        <option value="down">하행</option>
       </select>
       <p>목표 정류장 번호: {{ targetStation }}</p>
       <button @click="runDebuggingLogic">테스트 실행</button>
@@ -27,6 +41,30 @@
 import fs from 'fs'
 import math from 'mathjs'
 import Papa from 'papaparse'
+
+// 상행/하행 목표 정류장 번호 데이터
+const busTargetStations = {
+  '5000A': {
+    up: 50, // 상행 종점
+    down: 1 // 하행 종점
+  },
+  '5000B': {
+    up: 44, // 상행 종점
+    down: 2 // 하행 종점
+  },
+  6001: {
+    up: 60, // 상행 종점
+    down: 3 // 하행 종점
+  },
+  1112: {
+    up: 35, // 상행 종점
+    down: 5 // 하행 종점
+  },
+  M7731: {
+    up: 25, // 상행 종점
+    down: 10 // 하행 종점
+  }
+}
 
 // CSV 파일에서 승차 인원 데이터를 불러오는 함수
 function loadPassengerData(filePath) {
@@ -50,11 +88,10 @@ function poissonProb(k, sigma, lam) {
 // 버스 위치 정보를 가져오는 함수
 function getBusLocation(routeId) {
   // 이 함수는 실제 API나 다른 데이터 소스에서 버스 위치 정보를 가져와야 합니다.
-  //앞의 버스 위치, 뒤의 버스 위치에서 10분 이내이면 합치는 코드 api로 받아오기
+  // 앞의 버스 위치, 뒤의 버스 위치에서 10분 이내이면 합치는 코드 API로 받아오기
   // 여기서는 예시로 임의의 값을 반환합니다.
   return [38, 13] // 현재 정류장 인덱스, 다음 정류장 인덱스
 }
-// 무정차 정류장 제외하고 받아오기
 
 // 승차 확률 계산 함수
 function calculateBoardingProbability(
@@ -66,7 +103,7 @@ function calculateBoardingProbability(
   const [currentBus, nextBus] = getBusLocation(routeId)
 
   let remainSeat = 60
-  const timeSlot = '18시_승하차' //`f"{currentTime.hour}시_승하차"` 로 변경?
+  const timeSlot = '18시_승하차' // `f"{currentTime.hour}시_승하차"`로 변경 가능
 
   const stationList = Object.keys(passengerData)
   const relevantStations = stationList.slice(currentBus, targetStation + 1)
@@ -115,38 +152,27 @@ function calculateBoardingProbability(
 export default {
   data() {
     return {
-      selectedRoute: '5000B', // 테스트할 버스 노선 ID
-      targetStation: 44, // 목표 정류장 번호
-      csvData: [], // CSV 데이터 저장
-      results: [] // 결과 저장
+      selectedRoute: '5000B', // 초기 선택된 노선
+      selectedDirection: 'up', // 초기 방향 (상행)
+      targetStation: null, // 목표 정류장 번호
+      results: [] // 계산 결과 저장
     }
   },
   methods: {
-    async loadCsvData() {
-      try {
-        // CSV 파일 로드
-        const response = await fetch('/csv/int_passenger_flow.csv')
-        const csvText = await response.text()
-
-        // CSV 데이터 파싱
-        Papa.parse(csvText, {
-          header: true,
-          complete: (result) => {
-            console.log('[INFO] CSV 데이터 로드 완료:', result.data)
-            this.csvData = result.data
-          }
-        })
-      } catch (error) {
-        console.error('[ERROR] CSV 파일 로드 중 오류 발생:', error)
-      }
+    setTargetStation() {
+      // 노선과 방향에 따라 목표 정류장 번호 설정
+      this.targetStation =
+        busTargetStations[this.selectedRoute][this.selectedDirection]
+      console.log(
+        `선택된 노선: ${this.selectedRoute}, 방향: ${this.selectedDirection}, 목표 정류장: ${this.targetStation}`
+      )
     },
     async runDebuggingLogic() {
       try {
         console.log('[INFO] Debugging logic 실행 중...')
-        await this.loadCsvData() // CSV 데이터 로드
+        const passengerData = loadPassengerData('int_passenger_flow.csv')
 
         // 승차 확률 계산
-        const passengerData = loadPassengerData('int_passenger_flow.csv')
         this.results = calculateBoardingProbability(
           this.selectedRoute,
           this.targetStation,
@@ -160,8 +186,8 @@ export default {
       }
     }
   },
-  async mounted() {
-    await this.loadCsvData()
+  mounted() {
+    this.setTargetStation() // 초기 목표 정류장 설정
   }
 }
 </script>
