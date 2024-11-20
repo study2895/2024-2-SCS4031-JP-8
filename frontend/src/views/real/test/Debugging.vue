@@ -3,16 +3,18 @@
     <h1>버스 승차 확률 테스트</h1>
     <div>
       <label for="route-select">버스 노선 선택:</label>
-      <select
-        v-model="selectedRoute"
-        id="route-select"
-        @change="setTargetStation"
-      >
+      <select v-model="selectedRoute" id="route-select" @change="updateCsvPath">
         <option value="5000A">5000A</option>
         <option value="5000B">5000B</option>
         <option value="6001">6001</option>
         <option value="1112">1112</option>
         <option value="M7731">M7731</option>
+      </select>
+      <label for="day-select">요일 선택:</label>
+      <select v-model="selectedDayType" id="day-select" @change="updateCsvPath">
+        <option value="평일">평일</option>
+        <option value="토요일">토요일</option>
+        <option value="일요일">일요일</option>
       </select>
       <label for="direction-select">방향 선택:</label>
       <select
@@ -24,6 +26,7 @@
         <option value="down">하행</option>
       </select>
       <p>목표 정류장 번호: {{ targetStation }}</p>
+      <p>CSV 파일 경로: {{ csvPath }}</p>
       <button @click="runDebuggingLogic">테스트 실행</button>
     </div>
     <div v-if="results.length > 0">
@@ -38,8 +41,6 @@
 </template>
 
 <script>
-import fs from 'fs'
-import math from 'mathjs'
 import Papa from 'papaparse'
 
 // 상행/하행 목표 정류장 번호 데이터
@@ -67,83 +68,49 @@ const busTargetStations = {
 }
 
 // CSV 파일에서 승차 인원 데이터를 불러오는 함수
-function loadPassengerData(filePath) {
-  const data = fs.readFileSync(filePath, 'utf8')
-  const records = Papa.parse(data, { header: true }).data
-  const passengerData = {}
-  records.forEach((record) => {
-    passengerData[record['정류장명']] = record
-  })
-  return passengerData
+async function loadPassengerData(filePath) {
+  try {
+    const response = await fetch(filePath)
+    const text = await response.text()
+    return Papa.parse(text, { header: true }).data
+  } catch (error) {
+    console.error(`[ERROR] CSV 파일 로드 실패 (${filePath}):`, error)
+    return []
+  }
 }
 
 // 필요한 함수들 정의
 function poissonProb(k, sigma, lam) {
   return Array.from({ length: sigma - k }, (_, i) => k + i).reduce(
-    (sum, i) => sum + (math.exp(-lam) * Math.pow(lam, i)) / math.factorial(i),
+    (sum, i) => sum + (Math.exp(-lam) * Math.pow(lam, i)) / factorial(i),
     0
   )
 }
 
-// 버스 위치 정보를 가져오는 함수
-function getBusLocation(routeId) {
-  // 이 함수는 실제 API나 다른 데이터 소스에서 버스 위치 정보를 가져와야 합니다.
-  // 앞의 버스 위치, 뒤의 버스 위치에서 10분 이내이면 합치는 코드 API로 받아오기
-  // 여기서는 예시로 임의의 값을 반환합니다.
-  return [38, 13] // 현재 정류장 인덱스, 다음 정류장 인덱스
+function factorial(n) {
+  return n === 0 ? 1 : n * factorial(n - 1)
 }
 
-// 승차 확률 계산 함수
-function calculateBoardingProbability(
-  routeId,
-  targetStation,
-  currentTime,
-  passengerData
-) {
-  const [currentBus, nextBus] = getBusLocation(routeId)
-
-  let remainSeat = 60
-  const timeSlot = '18시_승하차' // `f"{currentTime.hour}시_승하차"`로 변경 가능
-
+function calculateBoardingProbability(routeId, targetStation, passengerData) {
+  const currentBus = 38 // 예시 값
+  const remainSeat = 60
+  const timeSlot = '18시_승하차'
   const stationList = Object.keys(passengerData)
   const relevantStations = stationList.slice(currentBus, targetStation + 1)
-
   const timeInterval = 15
   const totalBus = 60 / timeInterval
 
   const probabilities = []
 
   for (const station of relevantStations) {
-    const stationIndex = relevantStations.indexOf(station)
-
-    let avgPass = parseFloat(passengerData[station][timeSlot])
-
-    if (Array.isArray(avgPass)) {
-      avgPass = avgPass[0]
-    }
-    if (isNaN(avgPass)) {
-      avgPass = 0
-    }
-
+    const avgPass = parseFloat(passengerData[station][timeSlot]) || 0
     const totalPass = Math.max(0, avgPass * totalBus)
-    const busArrivalTime = 19 + stationIndex * 10
+    const busesUntilNow = totalPass > 0 ? Math.floor(totalPass / remainSeat) : 0
+    const targetPass = Math.max(0, totalPass - remainSeat)
 
-    let busesUntilNow = Math.floor(busArrivalTime / timeInterval)
-    if (busArrivalTime < 30) {
-      busesUntilNow = totalBus - busesUntilNow
-    }
-
-    const passPerTime = busesUntilNow > 0 ? totalPass / busesUntilNow : 0
-
-    const targetPass = Math.floor(totalPass - remainSeat)
     const prob =
-      targetPass <= 0 ? 1 : poissonProb(targetPass, totalPass, passPerTime)
+      targetPass <= 0 ? 1 : poissonProb(targetPass, totalPass, remainSeat)
     probabilities.push({ station, probability: (prob * 100).toFixed(2) })
-
-    if (remainSeat > 0) {
-      remainSeat -= avgPass
-      remainSeat = Math.max(0, remainSeat)
-    }
   }
 
   return probabilities
@@ -152,42 +119,45 @@ function calculateBoardingProbability(
 export default {
   data() {
     return {
-      selectedRoute: '5000B', // 초기 선택된 노선
+      selectedRoute: '5000B', // 초기 노선
+      selectedDayType: '평일', // 초기 요일 (평일, 토요일, 일요일)
       selectedDirection: 'up', // 초기 방향 (상행)
       targetStation: null, // 목표 정류장 번호
-      results: [] // 계산 결과 저장
+      csvPath: '', // CSV 파일 경로
+      results: [] // 결과 저장
     }
   },
   methods: {
     setTargetStation() {
-      // 노선과 방향에 따라 목표 정류장 번호 설정
       this.targetStation =
         busTargetStations[this.selectedRoute][this.selectedDirection]
-      console.log(
-        `선택된 노선: ${this.selectedRoute}, 방향: ${this.selectedDirection}, 목표 정류장: ${this.targetStation}`
-      )
+    },
+    updateCsvPath() {
+      // 선택된 노선과 요일에 따라 CSV 경로 설정
+      this.csvPath = `/csv/${this.selectedRoute}/${this.selectedRoute}_${this.selectedDayType}.csv`
+      console.log(`[INFO] CSV 파일 경로 설정: ${this.csvPath}`)
     },
     async runDebuggingLogic() {
       try {
-        console.log('[INFO] Debugging logic 실행 중...')
-        const passengerData = loadPassengerData('int_passenger_flow.csv')
+        // CSV 데이터 로드
+        const passengerData = await loadPassengerData(this.csvPath)
 
         // 승차 확률 계산
         this.results = calculateBoardingProbability(
           this.selectedRoute,
           this.targetStation,
-          new Date(),
           passengerData
         )
 
-        console.log('[INFO] Debugging logic 결과:', this.results)
+        console.log('[INFO] 계산 결과:', this.results)
       } catch (error) {
-        console.error('[ERROR] Debugging logic 실행 중 오류 발생:', error)
+        console.error('[ERROR] 로직 실행 중 오류 발생:', error)
       }
     }
   },
   mounted() {
-    this.setTargetStation() // 초기 목표 정류장 설정
+    this.setTargetStation()
+    this.updateCsvPath()
   }
 }
 </script>
