@@ -53,7 +53,8 @@ const busRouteData = {
     localBusID: 228000174,
     busLocalBlID: 228000174,
     routeId: 228000174,
-    region: '용인'
+    region: '용인',
+    folderPath: '../public/csv/5000B/'
   },
   1112: {
     busID: 10052,
@@ -76,6 +77,21 @@ function sanitizeStationName(stationName) {
   return stationName.replace(/[.,\s]/g, '')
 }
 
+// 요일 구하는 함수
+function getDayOfWeek(year, month, day) {
+  const date = new Date(year, month - 1, day)
+  const days = [
+    '일요일',
+    '월요일',
+    '화요일',
+    '수요일',
+    '목요일',
+    '금요일',
+    '토요일'
+  ]
+  return days[date.getDay()]
+}
+
 export default {
   data() {
     return {
@@ -83,15 +99,31 @@ export default {
       selectedBusRoute: '5000B', // 예시로 설정된 버스 노선
       selectedHour: 17, // 임의로 설정된 시간
       selectedMinute: 25, // 임의로 설정된 분
+      selectedMonth: 11, // 임의로 설정된 월
+      selectedDay: 19, // 임의로 설정된 일
       selectedDirection: 'up', // 상행(up) 또는 하행(down) 선택
       csvData: [] // CSV 데이터를 저장할 배열
     }
   },
   methods: {
     async loadCsvData() {
-      console.log('[INFO] Loading CSV data...')
+      const year = new Date().getFullYear()
+      const dayOfWeek = getDayOfWeek(year, this.selectedMonth, this.selectedDay)
+
+      const fileName =
+        dayOfWeek === '토요일'
+          ? '5000B_토요일.csv'
+          : dayOfWeek === '일요일'
+          ? '5000B_일요일.csv'
+          : '5000B_평일.csv'
+
+      const filePath = `${
+        busRouteData[this.selectedBusRoute].folderPath
+      }${fileName}`
+      console.log(`[INFO] Loading CSV data from file: ${fileName}`)
+
       return new Promise((resolve, reject) => {
-        Papa.parse('/csv/sarima_predictions_all_stations_weekday.csv', {
+        Papa.parse(filePath, {
           download: true,
           header: true,
           complete: (result) => {
@@ -106,6 +138,31 @@ export default {
         })
       })
     },
+
+    getCsvSeatPrediction(stationName, hour) {
+      const hourKey = `${hour}시` // 시간에 해당하는 컬럼명 생성
+      const stationRows = this.csvData.filter(
+        (row) =>
+          row['정류장명'].replace(/\s+/g, '').replace(/[.()]/g, '') ===
+          stationName.replace(/\s+/g, '').replace(/[.()]/g, '')
+      )
+
+      console.log('[DEBUG] Station Rows for', stationName, ':', stationRows) // 불러온 CSV 데이터 확인
+
+      if (stationRows.length === 0) {
+        console.warn(`[WARN] No data found for station: ${stationName}`)
+        return '데이터 없음'
+      }
+
+      // 지정된 시간대 데이터를 추출
+      const seatPrediction = stationRows[0][hourKey] || '데이터 없음'
+      console.log(
+        `[INFO] Seat Prediction for ${stationName} at ${hour}시:`,
+        seatPrediction
+      )
+      return seatPrediction
+    },
+
     async fetchBusRouteDetails() {
       const busID = busRouteData[this.selectedBusRoute].busID
       console.log(`[INFO] Fetching bus route details for busID: ${busID}`)
@@ -162,6 +219,7 @@ export default {
         console.error('[ERROR] Failed to fetch bus route details:', error)
       }
     },
+
     async fetchRealTimeData() {
       const routeId = busRouteData[this.selectedBusRoute].routeId
       const now = new Date()
@@ -211,35 +269,6 @@ export default {
           `[INFO] Current time does not match selected time for real-time data.`
         )
       }
-    },
-
-    getCsvSeatPrediction(stationName, hour) {
-      const hourKey = `${hour}시` // 시간에 해당하는 컬럼명 생성
-      const stationRows = this.csvData.filter(
-        (row) =>
-          row['정류장명'].replace(/\s+/g, '').replace(/[.()]/g, '') ===
-          stationName.replace(/\s+/g, '').replace(/[.()]/g, '')
-      )
-
-      console.log('[DEBUG] Station Rows for', stationName, ':', stationRows) // 불러온 CSV 데이터 확인
-
-      if (stationRows.length === 0) {
-        console.warn(`[WARN] No data found for station: ${stationName}`)
-        return '데이터 없음'
-      }
-
-      // 지정된 시간대 데이터를 추출
-      const targetRows = stationRows.map((row) => row[hourKey])
-
-      console.log('[DEBUG] Target Rows by Hour:', targetRows) // 시간대별로 추출된 데이터 확인
-
-      const seatPrediction =
-        targetRows[0] !== undefined ? targetRows[0] : '데이터 없음'
-      console.log(
-        `[INFO] Seat Prediction for ${stationName} at ${hour}시:`,
-        seatPrediction
-      )
-      return seatPrediction
     }
   },
   async mounted() {
