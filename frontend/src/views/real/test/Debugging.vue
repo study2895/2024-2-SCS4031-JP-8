@@ -42,6 +42,7 @@
 
 <script>
 import Papa from 'papaparse'
+import axios from 'axios'
 
 // 상행/하행 목표 정류장 번호 데이터
 const busTargetStations = {
@@ -82,21 +83,71 @@ function factorial(n) {
   return n === 0 ? 1 : n * factorial(n - 1)
 }
 
-// 버스 위치 정보를 가져오는 함수 (예시)
-function getBusLocation(routeId) {
-  return [38, 13] // 현재 정류장 인덱스와 다음 정류장 인덱스
+// API 호출을 통해 버스 위치 정보 가져오기
+async function getBusLocation(routeId, stationId) {
+  const serviceKey = 'YOUR_SERVICE_KEY' // API 키 입력
+  try {
+    const response = await axios.get(
+      'http://apis.data.go.kr/6410000/busarrivalservice/getBusArrivalItem',
+      {
+        params: {
+          serviceKey: serviceKey,
+          stationId: stationId,
+          routeId: routeId
+        }
+      }
+    )
+
+    const result = response.data.response.body.items.item
+
+    if (!result) {
+      console.warn('[WARN] API 응답에 차량 정보가 없습니다.')
+      return { currentBus: 38, nextBus: 13, remainSeats: 0 }
+    }
+
+    const firstBus = {
+      predictTime: parseInt(result.predictTime1, 10),
+      remainSeats: parseInt(result.remainSeatCnt1, 10)
+    }
+
+    const secondBus = {
+      predictTime: parseInt(result.predictTime2, 10),
+      remainSeats: parseInt(result.remainSeatCnt2, 10)
+    }
+
+    let totalRemainSeats = firstBus.remainSeats
+
+    if (
+      !isNaN(firstBus.predictTime) &&
+      !isNaN(secondBus.predictTime) &&
+      firstBus.predictTime <= 10 &&
+      secondBus.predictTime <= 10
+    ) {
+      totalRemainSeats += secondBus.remainSeats
+    }
+
+    return {
+      currentBus: firstBus.predictTime,
+      nextBus: secondBus.predictTime,
+      remainSeats: totalRemainSeats
+    }
+  } catch (error) {
+    console.error('[ERROR] API 호출 중 오류 발생:', error)
+    return { currentBus: 38, nextBus: 13, remainSeats: 0 }
+  }
 }
 
-// 승차 확률 계산 함수 (Python 코드 그대로 변환)
-function calculateBoardingProbability(
+// 승차 확률 계산 함수
+async function calculateBoardingProbability(
   routeId,
   targetStation,
   currentTime,
-  passengerData
+  passengerData,
+  stationId
 ) {
-  const [currentBus, nextBus] = getBusLocation(routeId)
+  const { currentBus, remainSeats } = await getBusLocation(routeId, stationId)
 
-  let remainSeat = 60
+  let remainSeat = remainSeats
   const timeSlot = `${currentTime.getHours()}시_승하차`
   const stationList = Object.keys(passengerData)
   const relevantStations = stationList.slice(currentBus, targetStation + 1)
@@ -143,7 +194,8 @@ export default {
       selectedDirection: 'up',
       targetStation: null,
       csvPath: '',
-      results: []
+      results: [],
+      stationId: '200000177' // 정류소 ID 예시
     }
   },
   methods: {
@@ -159,11 +211,12 @@ export default {
       try {
         const passengerData = await loadPassengerData(this.csvPath)
         const currentTime = new Date()
-        this.results = calculateBoardingProbability(
+        this.results = await calculateBoardingProbability(
           this.selectedRoute,
           this.targetStation,
           currentTime,
-          passengerData
+          passengerData,
+          this.stationId
         )
         console.log('[INFO] 계산 결과:', this.results)
       } catch (error) {
