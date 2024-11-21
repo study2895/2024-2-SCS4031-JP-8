@@ -42,29 +42,15 @@
 
 <script>
 import Papa from 'papaparse'
+import axios from 'axios'
 
 // 상행/하행 목표 정류장 번호 데이터
 const busTargetStations = {
-  '5000A': {
-    up: 50, // 상행 종점
-    down: 1 // 하행 종점
-  },
-  '5000B': {
-    up: 44, // 상행 종점
-    down: 2 // 하행 종점
-  },
-  6001: {
-    up: 60, // 상행 종점
-    down: 3 // 하행 종점
-  },
-  1112: {
-    up: 35, // 상행 종점
-    down: 5 // 하행 종점
-  },
-  M7731: {
-    up: 25, // 상행 종점
-    down: 10 // 하행 종점
-  }
+  '5000A': { up: 57, down: 28 },
+  '5000B': { up: 78, down: 41 },
+  6001: { up: 41, down: 18 },
+  1112: { up: 51, down: 24 },
+  M7731: { up: 25, down: 10 }
 }
 
 // CSV 파일에서 승차 인원 데이터를 불러오는 함수
@@ -72,29 +58,97 @@ async function loadPassengerData(filePath) {
   try {
     const response = await fetch(filePath)
     const text = await response.text()
-    return Papa.parse(text, { header: true }).data
+    const data = Papa.parse(text, { header: true }).data
+    const passengerData = {}
+    data.forEach((row) => {
+      passengerData[row['정류장명']] = row
+    })
+    return passengerData
   } catch (error) {
     console.error(`[ERROR] CSV 파일 로드 실패 (${filePath}):`, error)
-    return []
+    return {}
   }
 }
 
-// 필요한 함수들 정의
+// 포아송 확률 계산 함수
 function poissonProb(k, sigma, lam) {
-  return Array.from({ length: sigma - k }, (_, i) => k + i).reduce(
+  return Array.from({ length: Math.ceil(sigma) - k }, (_, i) => k + i).reduce(
     (sum, i) => sum + (Math.exp(-lam) * Math.pow(lam, i)) / factorial(i),
     0
   )
 }
 
+// 팩토리얼 계산 함수
 function factorial(n) {
   return n === 0 ? 1 : n * factorial(n - 1)
 }
 
-function calculateBoardingProbability(routeId, targetStation, passengerData) {
-  const currentBus = 38 // 예시 값
-  const remainSeat = 60
-  const timeSlot = '18시_승하차'
+// API 호출을 통해 버스 위치 정보 가져오기
+async function getBusLocation(routeId, stationId) {
+  const serviceKey = 'YOUR_SERVICE_KEY' // API 키 입력
+  try {
+    const response = await axios.get(
+      'http://apis.data.go.kr/6410000/busarrivalservice/getBusArrivalItem',
+      {
+        params: {
+          serviceKey: serviceKey,
+          stationId: stationId,
+          routeId: routeId
+        }
+      }
+    )
+
+    const result = response.data.response.body.items.item
+
+    if (!result) {
+      console.warn('[WARN] API 응답에 차량 정보가 없습니다.')
+      return { currentBus: 38, nextBus: 13, remainSeats: 0 }
+    }
+
+    const firstBus = {
+      predictTime: parseInt(result.predictTime1, 10),
+      remainSeats: parseInt(result.remainSeatCnt1, 10)
+    }
+
+    const secondBus = {
+      predictTime: parseInt(result.predictTime2, 10),
+      remainSeats: parseInt(result.remainSeatCnt2, 10)
+    }
+
+    let totalRemainSeats = firstBus.remainSeats
+
+    if (
+      !isNaN(firstBus.predictTime) &&
+      !isNaN(secondBus.predictTime) &&
+      firstBus.predictTime <= 10 &&
+      secondBus.predictTime <= 10
+    ) {
+      totalRemainSeats += secondBus.remainSeats
+    }
+
+    return {
+      currentBus: firstBus.predictTime,
+      nextBus: secondBus.predictTime,
+      remainSeats: totalRemainSeats
+    }
+  } catch (error) {
+    console.error('[ERROR] API 호출 중 오류 발생:', error)
+    return { currentBus: 38, nextBus: 13, remainSeats: 0 }
+  }
+}
+
+// 승차 확률 계산 함수
+async function calculateBoardingProbability(
+  routeId,
+  targetStation,
+  currentTime,
+  passengerData,
+  stationId
+) {
+  const { currentBus, remainSeats } = await getBusLocation(routeId, stationId)
+
+  let remainSeat = remainSeats
+  const timeSlot = `${currentTime.getHours()}시_승하차`
   const stationList = Object.keys(passengerData)
   const relevantStations = stationList.slice(currentBus, targetStation + 1)
   const timeInterval = 15
@@ -103,14 +157,30 @@ function calculateBoardingProbability(routeId, targetStation, passengerData) {
   const probabilities = []
 
   for (const station of relevantStations) {
-    const avgPass = parseFloat(passengerData[station][timeSlot]) || 0
+    const stationIndex = relevantStations.indexOf(station)
+    let avgPass = parseFloat(passengerData[station][timeSlot]) || 0
+
+    if (isNaN(avgPass)) avgPass = 0
+
     const totalPass = Math.max(0, avgPass * totalBus)
-    const busesUntilNow = totalPass > 0 ? Math.floor(totalPass / remainSeat) : 0
+    const busArrivalTime = 19 + stationIndex * 10
+
+    let busesUntilNow = Math.floor(busArrivalTime / timeInterval)
+    if (busArrivalTime < 30) {
+      busesUntilNow = totalBus - busesUntilNow
+    }
+
+    const passPerTime = busesUntilNow > 0 ? totalPass / busesUntilNow : 0
     const targetPass = Math.max(0, totalPass - remainSeat)
 
     const prob =
-      targetPass <= 0 ? 1 : poissonProb(targetPass, totalPass, remainSeat)
+      targetPass <= 0 ? 1 : poissonProb(targetPass, totalPass, passPerTime)
     probabilities.push({ station, probability: (prob * 100).toFixed(2) })
+
+    if (remainSeat > 0) {
+      remainSeat -= avgPass
+      remainSeat = Math.max(0, remainSeat)
+    }
   }
 
   return probabilities
@@ -119,12 +189,13 @@ function calculateBoardingProbability(routeId, targetStation, passengerData) {
 export default {
   data() {
     return {
-      selectedRoute: '5000B', // 초기 노선
-      selectedDayType: '평일', // 초기 요일 (평일, 토요일, 일요일)
-      selectedDirection: 'up', // 초기 방향 (상행)
-      targetStation: null, // 목표 정류장 번호
-      csvPath: '', // CSV 파일 경로
-      results: [] // 결과 저장
+      selectedRoute: '5000B',
+      selectedDayType: '평일',
+      selectedDirection: 'up',
+      targetStation: null,
+      csvPath: '',
+      results: [],
+      stationId: '200000177' // 정류소 ID 예시
     }
   },
   methods: {
@@ -133,22 +204,20 @@ export default {
         busTargetStations[this.selectedRoute][this.selectedDirection]
     },
     updateCsvPath() {
-      // 선택된 노선과 요일에 따라 CSV 경로 설정
       this.csvPath = `/csv/${this.selectedRoute}/${this.selectedRoute}_${this.selectedDayType}.csv`
       console.log(`[INFO] CSV 파일 경로 설정: ${this.csvPath}`)
     },
     async runDebuggingLogic() {
       try {
-        // CSV 데이터 로드
         const passengerData = await loadPassengerData(this.csvPath)
-
-        // 승차 확률 계산
-        this.results = calculateBoardingProbability(
+        const currentTime = new Date()
+        this.results = await calculateBoardingProbability(
           this.selectedRoute,
           this.targetStation,
-          passengerData
+          currentTime,
+          passengerData,
+          this.stationId
         )
-
         console.log('[INFO] 계산 결과:', this.results)
       } catch (error) {
         console.error('[ERROR] 로직 실행 중 오류 발생:', error)
