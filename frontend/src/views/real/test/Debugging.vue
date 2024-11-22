@@ -53,9 +53,10 @@ const busTargetStations = {
   M7731: { up: 25, down: 10 }
 }
 
-// CSV 파일에서 재차 인원 데이터를 불러오는 함수
+// CSV 파일에서 승차 인원 데이터를 불러오는 함수
 async function loadPassengerData(filePath) {
   try {
+    console.log(`[INFO] Loading passenger data from: ${filePath}`)
     const response = await fetch(filePath)
     const text = await response.text()
     const data = Papa.parse(text, { header: true }).data
@@ -63,9 +64,10 @@ async function loadPassengerData(filePath) {
     data.forEach((row) => {
       passengerData[row['정류장명']] = row
     })
+    console.log('[INFO] Passenger data successfully loaded.')
     return passengerData
   } catch (error) {
-    console.error(`[ERROR] CSV 파일 로드 실패 (${filePath}):`, error)
+    console.error(`[ERROR] Failed to load CSV file (${filePath}):`, error)
     return {}
   }
 }
@@ -86,6 +88,9 @@ function factorial(n) {
 // API 호출을 통해 실시간 여석 정보 가져오기
 async function getRealTimeSeats(routeId, stationId) {
   const serviceKey = 'YOUR_SERVICE_KEY' // API 키 입력
+  console.log(
+    `[INFO] Fetching real-time seats for routeId: ${routeId}, stationId: ${stationId}`
+  )
   try {
     const response = await axios.get(
       'http://apis.data.go.kr/6410000/busarrivalservice/getBusArrivalItem',
@@ -101,8 +106,8 @@ async function getRealTimeSeats(routeId, stationId) {
     const result = response.data.response.body.items.item
 
     if (!result) {
-      console.warn('[WARN] API 응답에 차량 정보가 없습니다.')
-      return 0
+      console.warn('[WARN] No data from API response.')
+      return 60 // 기본 여석
     }
 
     const firstBus = {
@@ -126,10 +131,11 @@ async function getRealTimeSeats(routeId, stationId) {
       totalRemainSeats += secondBus.remainSeats
     }
 
+    console.log(`[INFO] Total remaining seats calculated: ${totalRemainSeats}`)
     return totalRemainSeats > 0 ? totalRemainSeats : 0
   } catch (error) {
-    console.error('[ERROR] API 호출 중 오류 발생:', error)
-    return 0
+    console.error('[ERROR] API call failed:', error)
+    return 60 // 기본 여석
   }
 }
 
@@ -149,6 +155,8 @@ async function calculateBoardingProbability({
   }
 
   const timeSlot = `${currentTime.getHours()}시_승하차`
+  console.log(`[INFO] Calculating probabilities for timeSlot: ${timeSlot}`)
+
   const stationList = Object.keys(passengerData)
   const relevantStations = stationList.slice(0, targetStation + 1)
   const timeInterval = 15
@@ -157,8 +165,14 @@ async function calculateBoardingProbability({
   const probabilities = []
 
   for (const station of relevantStations) {
+    console.log(`[INFO] Processing station: ${station}`)
     const stationIndex = relevantStations.indexOf(station)
-    const avgPass = parseFloat(passengerData[station]?.[timeSlot] || 0)
+
+    let avgPass = parseFloat(passengerData[station]?.[timeSlot] || 0)
+
+    if (isNaN(avgPass)) {
+      avgPass = 0
+    }
 
     const totalPass = Math.max(0, avgPass * totalBus)
     const busArrivalTime = 19 + stationIndex * 10
@@ -170,6 +184,7 @@ async function calculateBoardingProbability({
 
     const prob =
       targetPass <= 0 ? 1 : poissonProb(targetPass, totalPass, passPerTime)
+
     probabilities.push({ station, probability: (prob * 100).toFixed(2) })
   }
 
@@ -195,15 +210,13 @@ export default {
         busTargetStations[this.selectedRoute][this.selectedDirection]
     },
     updateCsvPath() {
-      this.csvPath = `/csv/${this.selectedRoute}/${this.selectedRoute}_${this.selectedDayType}.csv`
+      this.csvPath = `/csv/${this.selectedRoute}/passengers/${this.selectedRoute}_${this.selectedDayType}.csv`
     },
     async runDebuggingLogic() {
       try {
         const passengerData = await loadPassengerData(this.csvPath)
         const currentTime = new Date()
-        const useRealTime =
-          currentTime.getHours() === this.selectedHour &&
-          currentTime.getMinutes() === this.selectedMinute
+        const useRealTime = currentTime.getHours() === this.selectedHour
 
         this.results = await calculateBoardingProbability({
           routeId: this.selectedRoute,
@@ -214,7 +227,7 @@ export default {
           useRealTime
         })
       } catch (error) {
-        console.error('[ERROR] 로직 실행 중 오류 발생:', error)
+        console.error('[ERROR] Logic execution failed:', error)
       }
     }
   },
@@ -224,10 +237,6 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-/* 스타일은 동일 */
-</style>
 
 <style scoped>
 .debugging-container {
