@@ -83,8 +83,8 @@ function factorial(n) {
   return n === 0 ? 1 : n * factorial(n - 1)
 }
 
-// API 호출을 통해 버스 위치 정보 가져오기
-async function getBusLocation(routeId, stationId) {
+// API 호출을 통해 실시간 여석 정보 가져오기
+async function getRealTimeSeats(routeId, stationId) {
   const serviceKey = 'YOUR_SERVICE_KEY' // API 키 입력
   try {
     const response = await axios.get(
@@ -102,7 +102,7 @@ async function getBusLocation(routeId, stationId) {
 
     if (!result) {
       console.warn('[WARN] API 응답에 차량 정보가 없습니다.')
-      return { currentBus: 38, nextBus: 13, remainSeats: 0 }
+      return 0
     }
 
     const firstBus = {
@@ -126,31 +126,31 @@ async function getBusLocation(routeId, stationId) {
       totalRemainSeats += secondBus.remainSeats
     }
 
-    return {
-      currentBus: firstBus.predictTime,
-      nextBus: secondBus.predictTime,
-      remainSeats: totalRemainSeats
-    }
+    return totalRemainSeats > 0 ? totalRemainSeats : 0
   } catch (error) {
     console.error('[ERROR] API 호출 중 오류 발생:', error)
-    return { currentBus: 38, nextBus: 13, remainSeats: 0 }
+    return 0
   }
 }
 
 // 승차 확률 계산 함수
-async function calculateBoardingProbability(
+async function calculateBoardingProbability({
   routeId,
   targetStation,
   currentTime,
   passengerData,
-  stationId
-) {
-  const { currentBus, remainSeats } = await getBusLocation(routeId, stationId)
+  stationId,
+  useRealTime
+}) {
+  let remainSeat = 60
 
-  let remainSeat = remainSeats
+  if (useRealTime) {
+    remainSeat = await getRealTimeSeats(routeId, stationId)
+  }
+
   const timeSlot = `${currentTime.getHours()}시_승하차`
   const stationList = Object.keys(passengerData)
-  const relevantStations = stationList.slice(currentBus, targetStation + 1)
+  const relevantStations = stationList.slice(0, targetStation + 1)
   const timeInterval = 15
   const totalBus = 60 / timeInterval
 
@@ -158,29 +158,19 @@ async function calculateBoardingProbability(
 
   for (const station of relevantStations) {
     const stationIndex = relevantStations.indexOf(station)
-    let avgPass = parseFloat(passengerData[station][timeSlot]) || 0
-
-    if (isNaN(avgPass)) avgPass = 0
+    const avgPass = parseFloat(passengerData[station]?.[timeSlot] || 0)
 
     const totalPass = Math.max(0, avgPass * totalBus)
     const busArrivalTime = 19 + stationIndex * 10
 
-    let busesUntilNow = Math.floor(busArrivalTime / timeInterval)
-    if (busArrivalTime < 30) {
-      busesUntilNow = totalBus - busesUntilNow
-    }
-
+    const busesUntilNow = Math.floor(busArrivalTime / timeInterval)
     const passPerTime = busesUntilNow > 0 ? totalPass / busesUntilNow : 0
+
     const targetPass = Math.max(0, totalPass - remainSeat)
 
     const prob =
       targetPass <= 0 ? 1 : poissonProb(targetPass, totalPass, passPerTime)
     probabilities.push({ station, probability: (prob * 100).toFixed(2) })
-
-    if (remainSeat > 0) {
-      remainSeat -= avgPass
-      remainSeat = Math.max(0, remainSeat)
-    }
   }
 
   return probabilities
@@ -195,7 +185,8 @@ export default {
       targetStation: null,
       csvPath: '',
       results: [],
-      stationId: '200000177' // 정류소 ID 예시
+      stationId: '193372', // 임시 정류소 ID
+      useRealTime: false // 실시간 여부 설정
     }
   },
   methods: {
@@ -205,20 +196,23 @@ export default {
     },
     updateCsvPath() {
       this.csvPath = `/csv/${this.selectedRoute}/${this.selectedRoute}_${this.selectedDayType}.csv`
-      console.log(`[INFO] CSV 파일 경로 설정: ${this.csvPath}`)
     },
     async runDebuggingLogic() {
       try {
         const passengerData = await loadPassengerData(this.csvPath)
         const currentTime = new Date()
-        this.results = await calculateBoardingProbability(
-          this.selectedRoute,
-          this.targetStation,
+        const useRealTime =
+          currentTime.getHours() === this.selectedHour &&
+          currentTime.getMinutes() === this.selectedMinute
+
+        this.results = await calculateBoardingProbability({
+          routeId: this.selectedRoute,
+          targetStation: this.targetStation,
           currentTime,
           passengerData,
-          this.stationId
-        )
-        console.log('[INFO] 계산 결과:', this.results)
+          stationId: this.stationId,
+          useRealTime
+        })
       } catch (error) {
         console.error('[ERROR] 로직 실행 중 오류 발생:', error)
       }
@@ -230,6 +224,10 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+/* 스타일은 동일 */
+</style>
 
 <style scoped>
 .debugging-container {
