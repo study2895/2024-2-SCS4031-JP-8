@@ -45,7 +45,6 @@
 import Papa from 'papaparse'
 import axios from 'axios'
 
-// 상행/하행 목표 정류장 번호 데이터
 const busTargetStations = {
   '5000A': { up: 57, down: 28 },
   '5000B': { up: 78, down: 41 },
@@ -54,7 +53,6 @@ const busTargetStations = {
   M7731: { up: 25, down: 10 }
 }
 
-// CSV 파일에서 승차 인원 데이터를 불러오는 함수
 async function loadPassengerData(filePath) {
   try {
     console.log(`[INFO] Loading passenger data from: ${filePath}`)
@@ -73,25 +71,32 @@ async function loadPassengerData(filePath) {
   }
 }
 
-// 포아송 확률 계산 함수
 function poissonProb(k, sigma, lam) {
-  return Array.from({ length: Math.ceil(sigma) - k }, (_, i) => k + i).reduce(
+  console.log(
+    `[DEBUG] Calculating Poisson probability for k=${k}, sigma=${sigma}, lam=${lam}`
+  )
+  const result = Array.from(
+    { length: Math.ceil(sigma) - k },
+    (_, i) => k + i
+  ).reduce(
     (sum, i) => sum + (Math.exp(-lam) * Math.pow(lam, i)) / factorial(i),
     0
   )
+  console.log(`[DEBUG] Poisson probability calculated: ${result}`)
+  return result
 }
 
-// 팩토리얼 계산 함수
 function factorial(n) {
   return n === 0 ? 1 : n * factorial(n - 1)
 }
 
-// API 호출을 통해 실시간 여석 정보 가져오기
 async function getRealTimeSeats(routeId, stationId) {
-  const serviceKey = 'YOUR_SERVICE_KEY' // API 키 입력
+  const serviceKey =
+    'EVTsGjdsoUlBtJTpdh/itgFJXzeeNK/BP4lN8my+i9AaoLGNln1kqRcyVP7CVRY8GsiXkX+OMl2HviEvq6hlfQ=='
   console.log(
     `[INFO] Fetching real-time seats for routeId: ${routeId}, stationId: ${stationId}`
   )
+
   try {
     const response = await axios.get(
       'http://apis.data.go.kr/6410000/busarrivalservice/getBusArrivalItem',
@@ -100,25 +105,31 @@ async function getRealTimeSeats(routeId, stationId) {
           serviceKey: serviceKey,
           stationId: stationId,
           routeId: routeId
+          // staOrder: 19 // 정류소 순번 (필요시 추가)
         }
       }
     )
 
-    const result = response.data.response.body.items.item
+    console.log('[DEBUG] API 응답 데이터:', response.data)
+
+    const result = response.data?.response?.body?.items?.item
 
     if (!result) {
-      console.warn('[WARN] No data from API response.')
+      console.warn('[WARN] API 응답에 데이터가 없습니다.')
+      console.log('[DEBUG] 전체 응답:', response.data)
       return 60 // 기본 여석
     }
 
     const firstBus = {
       predictTime: parseInt(result.predictTime1, 10),
-      remainSeats: parseInt(result.remainSeatCnt1, 10)
+      remainSeats:
+        result.remainSeatCnt1 === -1 ? 0 : parseInt(result.remainSeatCnt1, 10)
     }
 
     const secondBus = {
       predictTime: parseInt(result.predictTime2, 10),
-      remainSeats: parseInt(result.remainSeatCnt2, 10)
+      remainSeats:
+        result.remainSeatCnt2 === -1 ? 0 : parseInt(result.remainSeatCnt2, 10)
     }
 
     let totalRemainSeats = firstBus.remainSeats
@@ -135,12 +146,11 @@ async function getRealTimeSeats(routeId, stationId) {
     console.log(`[INFO] Total remaining seats calculated: ${totalRemainSeats}`)
     return totalRemainSeats > 0 ? totalRemainSeats : 0
   } catch (error) {
-    console.error('[ERROR] API call failed:', error)
+    console.error('[ERROR] API 호출 실패:', error)
     return 60 // 기본 여석
   }
 }
 
-// 승차 확률 계산 함수
 async function calculateBoardingProbability({
   routeId,
   targetStation,
@@ -154,23 +164,39 @@ async function calculateBoardingProbability({
   )
   const remainSeat = await getRealTimeSeats(routeId, stationId)
 
-  const timeSlot = `${currentTime.getHours()}시_승하차`
+  const timeSlot = `${currentTime.getHours()}시`
   console.log(`[INFO] Calculating probabilities for timeSlot: ${timeSlot}`)
 
   const stationList = Object.keys(passengerData)
+  if (stationList.length === 0) {
+    console.warn('[WARN] Passenger data is empty or malformed.')
+    return []
+  }
+  console.log('[DEBUG] Loaded station list:', stationList)
+
   const relevantStations = stationList.slice(0, targetStation + 1)
+  console.log('[DEBUG] Relevant stations:', relevantStations)
+
   const timeInterval = 15
   const totalBus = 60 / timeInterval
 
   const probabilities = []
 
   for (const station of relevantStations) {
+    if (!passengerData.hasOwnProperty(station)) {
+      console.warn(`[WARN] Station '${station}' not found in passenger data.`)
+      continue // 해당 정류장을 건너뜀
+    }
+
     console.log(`[INFO] Processing station: ${station}`)
     const stationIndex = relevantStations.indexOf(station)
 
     let avgPass = parseFloat(passengerData[station]?.[timeSlot] || 0)
 
     if (isNaN(avgPass)) {
+      console.warn(
+        `[WARN] Average passengers for station ${station} is NaN. Setting to 0.`
+      )
       avgPass = 0
     }
 
@@ -186,8 +212,12 @@ async function calculateBoardingProbability({
       targetPass <= 0 ? 1 : poissonProb(targetPass, totalPass, passPerTime)
 
     probabilities.push({ station, probability: (prob * 100).toFixed(2) })
+    console.log(
+      `[INFO] Probability for station ${station}: ${(prob * 100).toFixed(2)}%`
+    )
   }
 
+  console.log(`[INFO] Probability calculation completed.`)
   return probabilities
 }
 
@@ -198,10 +228,10 @@ export default {
       selectedDayType: '평일',
       selectedDirection: 'up',
       targetStation: null,
-      stationSequence: 0, // 임시 데이터
+      stationSequence: 0,
       csvPath: '',
       results: [],
-      stationId: '193372' // 임시 정류소 ID
+      stationId: '193372'
     }
   },
   methods: {
@@ -217,8 +247,10 @@ export default {
     },
     updateCsvPath() {
       this.csvPath = `/csv/${this.selectedRoute}/passengers/${this.selectedRoute}_${this.selectedDayType}.csv`
+      console.log(`[INFO] CSV path updated to: ${this.csvPath}`)
     },
     async runDebuggingLogic() {
+      console.log('[INFO] Running debugging logic...')
       try {
         const passengerData = await loadPassengerData(this.csvPath)
         const currentTime = new Date()
@@ -231,12 +263,14 @@ export default {
           stationId: this.stationId,
           stationSequence: this.stationSequence
         })
+        console.log('[INFO] Debugging logic completed successfully.')
       } catch (error) {
         console.error('[ERROR] Logic execution failed:', error)
       }
     }
   },
   mounted() {
+    console.log('[INFO] Component mounted. Initializing...')
     this.setTargetStation()
     this.updateCsvPath()
   }
