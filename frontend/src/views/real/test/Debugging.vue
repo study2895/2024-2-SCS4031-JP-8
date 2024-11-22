@@ -53,7 +53,7 @@ const busTargetStations = {
   M7731: { up: 25, down: 10 }
 }
 
-// CSV 파일에서 승차 인원 데이터를 불러오는 함수
+// CSV 파일에서 재차 인원 데이터를 불러오는 함수
 async function loadPassengerData(filePath) {
   try {
     const response = await fetch(filePath)
