@@ -26,6 +26,7 @@
         <option value="down">하행</option>
       </select>
       <p>목표 정류장 번호: {{ targetStation }}</p>
+      <p>정류장 순번: {{ stationSequence }}</p>
       <p>CSV 파일 경로: {{ csvPath }}</p>
       <button @click="runDebuggingLogic">테스트 실행</button>
     </div>
@@ -146,13 +147,12 @@ async function calculateBoardingProbability({
   currentTime,
   passengerData,
   stationId,
-  useRealTime
+  stationSequence
 }) {
-  let remainSeat = 60
-
-  if (useRealTime) {
-    remainSeat = await getRealTimeSeats(routeId, stationId)
-  }
+  console.log(
+    `[INFO] Starting probability calculation for stationSequence: ${stationSequence}`
+  )
+  const remainSeat = await getRealTimeSeats(routeId, stationId)
 
   const timeSlot = `${currentTime.getHours()}시_승하차`
   console.log(`[INFO] Calculating probabilities for timeSlot: ${timeSlot}`)
@@ -198,16 +198,22 @@ export default {
       selectedDayType: '평일',
       selectedDirection: 'up',
       targetStation: null,
+      stationSequence: 0, // 임시 데이터
       csvPath: '',
       results: [],
-      stationId: '193372', // 임시 정류소 ID
-      useRealTime: false // 실시간 여부 설정
+      stationId: '193372' // 임시 정류소 ID
     }
   },
   methods: {
     setTargetStation() {
       this.targetStation =
         busTargetStations[this.selectedRoute][this.selectedDirection]
+      this.stationSequence =
+        this.selectedDirection === 'up'
+          ? busTargetStations[this.selectedRoute].up
+          : 0
+      console.log(`[INFO] Target station set to: ${this.targetStation}`)
+      console.log(`[INFO] Station sequence set to: ${this.stationSequence}`)
     },
     updateCsvPath() {
       this.csvPath = `/csv/${this.selectedRoute}/passengers/${this.selectedRoute}_${this.selectedDayType}.csv`
@@ -216,7 +222,6 @@ export default {
       try {
         const passengerData = await loadPassengerData(this.csvPath)
         const currentTime = new Date()
-        const useRealTime = currentTime.getHours() === this.selectedHour
 
         this.results = await calculateBoardingProbability({
           routeId: this.selectedRoute,
@@ -224,7 +229,7 @@ export default {
           currentTime,
           passengerData,
           stationId: this.stationId,
-          useRealTime
+          stationSequence: this.stationSequence
         })
       } catch (error) {
         console.error('[ERROR] Logic execution failed:', error)
