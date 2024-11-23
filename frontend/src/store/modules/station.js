@@ -1,27 +1,19 @@
 const state = {
-  stationData: null
+  stationData: null, // 정류장 정보
+  finalResults: [] // 최종 계산 결과
 }
 
 const mutations = {
-  SET_STATION_DATA(state, payload) {
-    state.stationData = payload
+  SET_STATION_DATA(state, data) {
+    state.stationData = data
+  },
+  SET_FINAL_RESULTS(state, results) {
+    state.finalResults = results
   }
-}
-
-const actions = {
-  saveStationData({ commit }, payload) {
-    commit('SET_STATION_DATA', payload)
-  }
-}
-
-const getters = {
-  getStationData: (state) => state.stationData
 }
 
 export default {
   namespaced: true,
   state,
-  mutations,
-  actions,
-  getters
+  mutations
 }
