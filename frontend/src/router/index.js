@@ -25,7 +25,7 @@ import DetailedRoutePage from '@/views/real/DetailedRoutePage.vue'
 import Gonggong from '@/views/real/gonggong.vue'
 import BusDetailInfo from '@/views/real/BusDetailInfo.vue'
 import BusDetailLocation from '@/views/real/BusDetailLocation.vue'
-import FinalPage from '@/views/real/FinalPage.vue'
+import FinalPage from '@/views/real/test/FinalPage.vue'
 import Debugging from '@/views/real/test/Debugging.vue'
 
 const routes = [

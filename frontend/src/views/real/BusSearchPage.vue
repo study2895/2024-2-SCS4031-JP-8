@@ -187,7 +187,7 @@ export default {
       })
 
       router.push({
-        path: '/next-page',
+        path: '/final',
         query: {
           busNo: route.busNo,
           direction: route.directionText,
