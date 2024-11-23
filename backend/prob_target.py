@@ -8,7 +8,8 @@ import math
 #    """bus_location부터 마지막 행까지의 정류장에 대해서 각 정류장의 총승차인원을 저장"""
     
 
-#bus_location = 39 # 현재 버스가 위치한 정류장번호
+# f_bus_location = 39 # 현재 버스가 위치한 정류장번호
+# s_bus_location = 39 # 현재 버스가 위치한 정류장번호
 
 time = '17시'
 bus_arrival_time = 5 # 버스 도착시간 (분)

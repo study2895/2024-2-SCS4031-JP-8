@@ -34,7 +34,7 @@ export default {
   },
   methods: {
     async fetchBusInfo() {
-      const url = `http://localhost:3001/api/bus-info?busRouteId=${this.busRouteId}`
+      const url = `http://localhost:3000/api/bus-info?busRouteId=${this.busRouteId}`
 
       try {
         const response = await fetch(url)
