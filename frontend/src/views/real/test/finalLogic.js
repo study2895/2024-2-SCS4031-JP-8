@@ -1,6 +1,7 @@
 import axios from 'axios'
-import { calculatePoissonProbability } from '@/utils/poisson' // 포아송 관련 계산 함수
-import { parse } from 'csv-parse/sync' // CSV 파싱
+import { calculatePoissonProbability } from './poisson' // 동일 폴더 내 import
+import { parse } from 'csv-parse/sync'
+import fs from 'fs/promises'
 
 // 최종 페이지 로직 처리 함수
 export async function processFinalPageLogic(stationData) {
@@ -10,7 +11,7 @@ export async function processFinalPageLogic(stationData) {
   const realTimeData = await fetchRealTimeBusData(route, stations[0].id)
 
   // 2. 승차 인원 데이터 로드
-  const passengerData = await loadPassengerData('/csv/int_passenger_flow.csv')
+  const passengerData = await loadPassengerData('./int_passenger_flow.csv')
 
   // 3. 포아송 확률 계산
   const probabilities = calculatePoissonProbability({
@@ -66,7 +67,6 @@ async function fetchRealTimeBusData(routeId, stationId) {
 
 // 승차 인원 CSV 데이터 로드
 async function loadPassengerData(filePath) {
-  const response = await fetch(filePath)
-  const csvData = await response.text()
+  const csvData = await fs.readFile(filePath, 'utf8')
   return parse(csvData, { columns: true })
 }
